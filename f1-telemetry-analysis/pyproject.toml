@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "f1-telemetry-analysis"
+version = "0.1.0"
+description = "A toolkit for analyzing Formula 1 telemetry and timing data using the FastF1 API."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Neer" }]
+dependencies = [
+    "fastf1>=3.3,<4.0",
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[tool.setuptools.packages.find]
+include = ["f1_analysis*"]
