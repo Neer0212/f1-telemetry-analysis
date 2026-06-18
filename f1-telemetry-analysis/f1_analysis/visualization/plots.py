@@ -22,6 +22,7 @@ from f1_analysis.core.lap_analysis import clean_lap_times, laps_to_seconds, stin
 from f1_analysis.core.telemetry import TelemetryComparison
 from f1_analysis.visualization.style import (
     get_compound_color,
+    get_driver_color,
     get_driver_style,
     get_team_color,
 )
@@ -65,7 +66,7 @@ def plot_lap_time_distribution(
             continue
         data.append(laps_to_seconds(driver_laps).dropna().values)
         labels.append(driver)
-        colors.append(get_team_color(driver, session))
+        colors.append(get_driver_color(driver, session))
 
     parts = ax.violinplot(data, showmedians=True)
     for body, color in zip(parts["bodies"], colors):
@@ -275,7 +276,7 @@ def plot_telemetry_delta(comparison: TelemetryComparison, session: Session) -> F
     """
     fig, ax = plt.subplots(figsize=(12, 4))
 
-    color_b = get_team_color(comparison.driver_b, session)
+    color_b = get_driver_color(comparison.driver_b, session)
     ax.plot(comparison.delta_time["Distance"], comparison.delta_time["Delta"], color=color_b, linewidth=2)
     ax.axhline(0, color="white", linewidth=0.8, alpha=0.5, linestyle="--")
     ax.fill_between(
