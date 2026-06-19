@@ -22,7 +22,6 @@ from f1_analysis.core.lap_analysis import clean_lap_times, laps_to_seconds, stin
 from f1_analysis.core.telemetry import TelemetryComparison
 from f1_analysis.visualization.style import (
     get_compound_color,
-    get_driver_color,
     get_driver_style,
     get_team_color,
 )
@@ -66,7 +65,7 @@ def plot_lap_time_distribution(
             continue
         data.append(laps_to_seconds(driver_laps).dropna().values)
         labels.append(driver)
-        colors.append(get_driver_color(driver, session))
+        colors.append(get_team_color(driver, session))
 
     parts = ax.violinplot(data, showmedians=True)
     for body, color in zip(parts["bodies"], colors):
@@ -276,7 +275,7 @@ def plot_telemetry_delta(comparison: TelemetryComparison, session: Session) -> F
     """
     fig, ax = plt.subplots(figsize=(12, 4))
 
-    color_b = get_driver_color(comparison.driver_b, session)
+    color_b = get_team_color(comparison.driver_b, session)
     ax.plot(comparison.delta_time["Distance"], comparison.delta_time["Delta"], color=color_b, linewidth=2)
     ax.axhline(0, color="white", linewidth=0.8, alpha=0.5, linestyle="--")
     ax.fill_between(
@@ -435,5 +434,161 @@ def plot_track_speed_map(telemetry: pd.DataFrame, session: Session, driver: str)
     cbar.set_label("Speed (km/h)")
 
     ax.set_title(f"Speed Map — {driver} — {session.event['EventName']} {session.event.year}")
+    fig.tight_layout()
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# ML visualization functions
+# ---------------------------------------------------------------------------
+
+def plot_feature_importances(importances: pd.DataFrame, title: str = "Feature Importances") -> Figure:
+    """
+    Horizontal bar chart of model feature importances.
+
+    Parameters
+    ----------
+    importances:
+        DataFrame with ``Feature`` and ``Importance`` columns, as returned
+        by ``model.feature_importances()``.
+    title:
+        Chart title.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    fig, ax = plt.subplots(figsize=(9, max(4, len(importances) * 0.35)))
+    importances = importances.sort_values("Importance", ascending=True)
+    ax.barh(importances["Feature"], importances["Importance"], color="#3671C6", alpha=0.85)
+    ax.set_xlabel("Importance")
+    ax.set_title(title)
+    ax.grid(True, axis="x", alpha=0.3)
+    fig.tight_layout()
+    return fig
+
+
+def plot_degradation_curve(
+    degradation_df: pd.DataFrame,
+    compound: str,
+    title: Optional[str] = None,
+) -> Figure:
+    """
+    Plot the predicted lap time degradation curve for a tire compound.
+
+    Parameters
+    ----------
+    degradation_df:
+        DataFrame with ``TyreLife`` and ``PredictedLapTime`` columns,
+        as returned by ``LapTimePredictor.degradation_curve()``.
+    compound:
+        Compound name (for label and color).
+    title:
+        Optional custom title.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    COMPOUND_COLORS = {
+        "SOFT": "#DA291C",
+        "MEDIUM": "#FFD700",
+        "HARD": "#FFFFFF",
+        "INTERMEDIATE": "#43B02A",
+        "WET": "#0067AD",
+    }
+    color = COMPOUND_COLORS.get(compound.upper(), "#888888")
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(
+        degradation_df["TyreLife"],
+        degradation_df["PredictedLapTime"],
+        color=color,
+        linewidth=2.5,
+        marker="o",
+        markersize=4,
+        label=f"{compound.capitalize()} compound",
+    )
+    ax.set_xlabel("Tyre Life (laps)")
+    ax.set_ylabel("Predicted Lap Time (s)")
+    ax.set_title(title or f"Predicted Tyre Degradation — {compound.capitalize()}")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    return fig
+
+
+def plot_undercut_windows(scored_laps: pd.DataFrame, event_name: str = "") -> Figure:
+    """
+    Scatter plot of undercut score over lap number, with flagged windows highlighted.
+
+    Parameters
+    ----------
+    scored_laps:
+        Output of ``UndercutDetector.score_laps()`` for a single race.
+    event_name:
+        Used in the chart title.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    fig, ax = plt.subplots(figsize=(12, 5))
+
+    if "Driver" in scored_laps.columns:
+        for driver, grp in scored_laps.groupby("Driver"):
+            mask = grp["WindowOpen"]
+            ax.scatter(
+                grp["LapNumber"], grp["UndercutScore"],
+                s=18, alpha=0.35, color="grey",
+            )
+            ax.scatter(
+                grp.loc[mask, "LapNumber"], grp.loc[mask, "UndercutScore"],
+                s=55, alpha=0.9, label=driver, zorder=5,
+            )
+    else:
+        ax.scatter(scored_laps["LapNumber"], scored_laps["UndercutScore"], s=18, alpha=0.5)
+        mask = scored_laps["WindowOpen"]
+        ax.scatter(scored_laps.loc[mask, "LapNumber"], scored_laps.loc[mask, "UndercutScore"],
+                   s=60, color="red", label="Window Open", zorder=5)
+
+    ax.axhline(0.6, color="red", linewidth=1, linestyle="--", alpha=0.7, label="Threshold (0.6)")
+    ax.set_xlabel("Lap Number")
+    ax.set_ylabel("Undercut Score")
+    ax.set_ylim(0, 1.05)
+    ax.set_title(f"Undercut Windows — {event_name}")
+    ax.legend(loc="upper right", fontsize=8, ncol=3)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    return fig
+
+
+def plot_compound_confusion(
+    y_true: "Sequence[str]",
+    y_pred: "Sequence[str]",
+) -> Figure:
+    """
+    Confusion matrix heatmap for the tire compound classifier.
+
+    Parameters
+    ----------
+    y_true:
+        True compound labels.
+    y_pred:
+        Predicted compound labels from ``TireCompoundClassifier.predict()``.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
+
+    classes = sorted(set(list(y_true) + list(y_pred)))
+    cm = confusion_matrix(y_true, y_pred, labels=classes)
+
+    fig, ax = plt.subplots(figsize=(7, 6))
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
+    disp.plot(ax=ax, colorbar=True, cmap="Blues")
+    ax.set_title("Tire Compound Classifier — Confusion Matrix")
     fig.tight_layout()
     return fig

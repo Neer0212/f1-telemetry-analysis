@@ -8,6 +8,11 @@ from f1_analysis.visualization.plots import (
     plot_throttle_brake_comparison,
     plot_championship_progression,
     plot_track_speed_map,
+    # ML visualization
+    plot_feature_importances,
+    plot_degradation_curve,
+    plot_undercut_windows,
+    plot_compound_confusion,
 )
 
 __all__ = [
@@ -22,4 +27,8 @@ __all__ = [
     "plot_throttle_brake_comparison",
     "plot_championship_progression",
     "plot_track_speed_map",
+    "plot_feature_importances",
+    "plot_degradation_curve",
+    "plot_undercut_windows",
+    "plot_compound_confusion",
 ]
