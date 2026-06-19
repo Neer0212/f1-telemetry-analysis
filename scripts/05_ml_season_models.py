@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """
-Train all four ML models on a season's race data and generate analysis charts.
+Driver-specific ML analysis across a season.
 
-Fetches lap data for every completed race in the season (via FastF1),
-trains the four models, evaluates each one, and saves charts plus a
-Markdown summary of all model results.
-
-This script is intentionally designed to run end-to-end: run it once
-and it produces everything. Subsequent runs are fast because FastF1
-caches session data locally.
+Trains all four models on a specific driver's laps from the season,
+so everything is tailored to their pace, tyres, and strategy patterns
+rather than averaged across all 20 drivers and 24 circuits.
 
 Usage
 -----
-    python scripts/05_ml_season_models.py --year 2024
-    python scripts/05_ml_season_models.py --year 2023 --max-rounds 10
-    python scripts/05_ml_season_models.py --year 2024 --load-data outputs/season_2024_laps.csv
+    python scripts/05_ml_season_models.py --year 2024 --driver VER
+    python scripts/05_ml_season_models.py --year 2024 --driver LEC --max-rounds 15
+    python scripts/05_ml_season_models.py --year 2024 --driver NOR --load-data outputs/reports/season_2024_laps.csv
 """
 
 from __future__ import annotations
@@ -27,7 +23,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 from f1_analysis.ml import (
     SeasonDataBuilder,
@@ -56,129 +51,160 @@ def _section(title: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--year", type=int, required=True, help="Season year, e.g. 2024")
+    parser.add_argument("--driver", type=str, required=True, help="Driver code e.g. VER, LEC, HAM, NOR")
     parser.add_argument("--max-rounds", type=int, default=None,
                         help="Limit to first N rounds (faster for testing)")
     parser.add_argument("--load-data", type=str, default=None,
                         help="Load pre-built season CSV instead of fetching from FastF1")
-    parser.add_argument("--test-size", type=float, default=0.2,
-                        help="Fraction of data held out for evaluation (default 0.2)")
     args = parser.parse_args()
 
+    driver = args.driver.upper()
     apply_f1_style()
 
-    models_dir = OUTPUT_DIR / "models"
-    charts_dir = OUTPUT_DIR / "charts" / f"{args.year}_ml"
+    models_dir = OUTPUT_DIR / "models" / f"{args.year}_{driver}"
+    charts_dir = OUTPUT_DIR / "charts" / f"{args.year}_{driver}_ml"
     reports_dir = OUTPUT_DIR / "reports"
     for d in (models_dir, charts_dir, reports_dir):
         d.mkdir(parents=True, exist_ok=True)
 
     # -------------------------------------------------------------------
-    # 1. Build or load season lap data
+    # 1. Load season data (all drivers — filter to target driver after)
     # -------------------------------------------------------------------
-    _section(f"Building season data for {args.year}")
+    _section(f"Loading {args.year} season data")
 
     if args.load_data:
         print(f"Loading from: {args.load_data}")
-        df = SeasonDataBuilder.load_csv(args.load_data)
+        df_all = SeasonDataBuilder.load_csv(args.load_data)
     else:
         data_path = reports_dir / f"season_{args.year}_laps.csv"
         if data_path.exists():
-            print(f"Found cached season CSV: {data_path} — loading.")
-            df = SeasonDataBuilder.load_csv(data_path)
+            print(f"Found cached season CSV — loading.")
+            df_all = SeasonDataBuilder.load_csv(data_path)
         else:
+            print("Fetching from FastF1 (this takes a while first time)...")
             builder = SeasonDataBuilder(args.year)
-            df = builder.build(save_path=data_path, max_rounds=args.max_rounds)
+            df_all = builder.build(save_path=data_path, max_rounds=args.max_rounds)
 
-    print(f"Total laps: {len(df):,}  |  Rounds: {df['Round'].nunique()}  |  Drivers: {df['Driver'].nunique()}")
+    # Filter to chosen driver
+    df = df_all[df_all["Driver"] == driver].copy()
+    if df.empty:
+        available = sorted(df_all["Driver"].unique())
+        print(f"\nERROR: Driver '{driver}' not found in season data.")
+        print(f"Available drivers: {', '.join(available)}")
+        sys.exit(1)
 
-    # Train / test split (split by round to avoid data leakage across races)
-    rounds = df["Round"].unique()
-    n_test_rounds = max(1, int(len(rounds) * args.test_size))
-    test_rounds = sorted(rounds)[-n_test_rounds:]
+    print(f"\nDriver: {driver}")
+    print(f"Laps: {len(df)} across {df['Round'].nunique()} races")
+    print(f"Compounds used: {df['Compound'].dropna().unique().tolist()}")
+    print(f"Avg lap time: {df['LapSeconds'].mean():.3f}s")
+
+    # Train/test split by round (last 20% of rounds = test)
+    rounds = sorted(df["Round"].unique())
+    n_test = max(1, int(len(rounds) * 0.2))
+    test_rounds = rounds[-n_test:]
     train_df = df[~df["Round"].isin(test_rounds)]
     test_df = df[df["Round"].isin(test_rounds)]
-    print(f"Train: {len(train_df):,} laps ({len(rounds) - n_test_rounds} rounds) | "
-          f"Test: {len(test_df):,} laps ({n_test_rounds} rounds)")
+    test_race_names = df[df["Round"].isin(test_rounds)]["EventName"].unique().tolist()
+
+    print(f"Training on {len(rounds) - n_test} races, testing on: {', '.join(test_race_names)}")
 
     report_lines = [
-        f"# ML Model Report — {args.year} Season\n",
-        f"Training rounds: {len(rounds) - n_test_rounds} | Test rounds: {n_test_rounds}\n",
-        f"Total laps: {len(df):,}\n\n",
+        f"# ML Driver Report — {driver} — {args.year} Season\n\n",
+        f"**Driver:** {driver}  \n",
+        f"**Season:** {args.year}  \n",
+        f"**Total laps analysed:** {len(df):,}  \n",
+        f"**Races trained on:** {len(rounds) - n_test}  \n",
+        f"**Test races:** {', '.join(test_race_names)}  \n\n",
     ]
 
     # -------------------------------------------------------------------
     # 2. Lap Time Predictor
     # -------------------------------------------------------------------
-    _section("1/4 — Lap Time Predictor (Regression)")
+    _section(f"1/4 — Lap Time Predictor for {driver}")
 
     lap_model = LapTimePredictor()
     lap_model.fit(train_df)
     lap_eval = lap_model.evaluate(test_df)
-    print(f"MAE: {lap_eval['mae_seconds']:.3f}s | R²: {lap_eval['r2']:.4f} | "
-          f"Within 0.5s: {lap_eval['within_0_5s_pct']:.1f}%")
 
-    lap_model.save(models_dir / f"lap_time_{args.year}.pkl")
+    print(f"MAE:          {lap_eval['mae_seconds']:.3f} s")
+    print(f"R²:           {lap_eval['r2']:.4f}")
+    print(f"Within 0.5s:  {lap_eval['within_0_5s_pct']:.1f}%")
+    lap_model.save(models_dir / "lap_time.pkl")
 
-    fi = lap_model.feature_importances()
-    fig = plot_feature_importances(fi, title=f"Lap Time Predictor — Feature Importances ({args.year})")
+    fig = plot_feature_importances(
+        lap_model.feature_importances(),
+        title=f"Lap Time — What drives {driver}'s pace? ({args.year})"
+    )
     fig.savefig(charts_dir / "lap_time_feature_importances.png")
 
+    compounds_used = df["Compound"].dropna().str.upper().unique()
     for compound in ("SOFT", "MEDIUM", "HARD"):
-        deg = lap_model.degradation_curve(compound)
-        fig = plot_degradation_curve(deg, compound,
-                                     title=f"{compound} Degradation — {args.year} Season Model")
-        fig.savefig(charts_dir / f"degradation_{compound.lower()}.png")
+        if compound in compounds_used:
+            deg = lap_model.degradation_curve(compound)
+            fig = plot_degradation_curve(
+                deg, compound,
+                title=f"{driver} — {compound} Tyre Degradation ({args.year})"
+            )
+            fig.savefig(charts_dir / f"degradation_{compound.lower()}.png")
 
     report_lines += [
         "## 1. Lap Time Predictor\n",
-        f"- MAE: **{lap_eval['mae_seconds']} s**\n",
-        f"- R²: **{lap_eval['r2']}**\n",
-        f"- Within 0.5 s: **{lap_eval['within_0_5s_pct']}%**\n",
-        f"- Test samples: {lap_eval['n_samples']:,}\n\n",
+        f"> Predicts {driver}'s lap time from tyre age, track temp, speed traps etc.\n\n",
+        f"| Metric | Value |\n|---|---|\n",
+        f"| MAE | **{lap_eval['mae_seconds']} s** |\n",
+        f"| R² | **{lap_eval['r2']}** |\n",
+        f"| Within 0.5s | **{lap_eval['within_0_5s_pct']}%** |\n\n",
     ]
 
     # -------------------------------------------------------------------
     # 3. Race Finish Predictor
     # -------------------------------------------------------------------
-    _section("2/4 — Race Finish Predictor (Classification)")
+    _section(f"2/4 — Race Finish Predictor for {driver}")
 
     finish_model = RaceFinishPredictor()
     finish_model.fit(train_df)
     finish_eval = finish_model.evaluate(test_df)
-    print(f"F1 (macro): {finish_eval['f1_macro']:.4f} | F1 (weighted): {finish_eval['f1_weighted']:.4f}")
+
+    print(f"F1 (macro):    {finish_eval['f1_macro']:.4f}")
+    print(f"F1 (weighted): {finish_eval['f1_weighted']:.4f}")
     print(finish_eval["classification_report"])
+    finish_model.save(models_dir / "race_finish.pkl")
 
-    finish_model.save(models_dir / f"race_finish_{args.year}.pkl")
-
-    fi = finish_model.feature_importances()
-    fig = plot_feature_importances(fi, title=f"Race Finish Predictor — Feature Importances ({args.year})")
+    fig = plot_feature_importances(
+        finish_model.feature_importances(),
+        title=f"Finish Predictor — What predicts {driver}'s result? ({args.year})"
+    )
     fig.savefig(charts_dir / "finish_feature_importances.png")
 
     report_lines += [
         "## 2. Race Finish Predictor\n",
-        f"- F1 (macro): **{finish_eval['f1_macro']}**\n",
-        f"- F1 (weighted): **{finish_eval['f1_weighted']}**\n",
+        f"> Predicts whether {driver} will finish Podium / Points / Outside Points.\n\n",
+        f"| Metric | Value |\n|---|---|\n",
+        f"| F1 (macro) | **{finish_eval['f1_macro']}** |\n",
+        f"| F1 (weighted) | **{finish_eval['f1_weighted']}** |\n\n",
         "```\n" + finish_eval["classification_report"] + "\n```\n\n",
     ]
 
     # -------------------------------------------------------------------
     # 4. Tire Compound Classifier
     # -------------------------------------------------------------------
-    _section("3/4 — Tire Compound Classifier")
+    _section(f"3/4 — Tire Compound Classifier for {driver}")
 
     compound_model = TireCompoundClassifier()
     compound_model.fit(train_df)
     compound_eval = compound_model.evaluate(test_df)
-    print(f"F1 (macro): {compound_eval['f1_macro']:.4f} | F1 (weighted): {compound_eval['f1_weighted']:.4f}")
+
+    print(f"F1 (macro):    {compound_eval['f1_macro']:.4f}")
+    print(f"F1 (weighted): {compound_eval['f1_weighted']:.4f}")
     print(compound_eval["classification_report"])
+    compound_model.save(models_dir / "tire_compound.pkl")
 
-    compound_model.save(models_dir / f"tire_compound_{args.year}.pkl")
-
-    fi = compound_model.feature_importances()
-    fig = plot_feature_importances(fi, title=f"Tire Classifier — Feature Importances ({args.year})")
+    fig = plot_feature_importances(
+        compound_model.feature_importances(),
+        title=f"Tyre Classifier — How does model identify {driver}'s compound? ({args.year})"
+    )
     fig.savefig(charts_dir / "compound_feature_importances.png")
 
-    # Confusion matrix on test set
     test_clean = test_df.dropna(subset=["Compound", "Sector1Seconds"])
     test_clean = test_clean[test_clean["Compound"].str.upper().isin(
         ["SOFT", "MEDIUM", "HARD", "INTERMEDIATE", "WET"]
@@ -186,61 +212,60 @@ def main() -> None:
     if not test_clean.empty:
         y_pred = compound_model.predict(test_clean)
         fig = plot_compound_confusion(test_clean["Compound"].str.upper(), y_pred)
+        fig.axes[0].set_title(f"Tyre Compound Classifier — {driver} ({args.year})")
         fig.savefig(charts_dir / "compound_confusion_matrix.png")
 
     report_lines += [
-        "## 3. Tire Compound Classifier\n",
-        f"- F1 (macro): **{compound_eval['f1_macro']}**\n",
-        f"- F1 (weighted): **{compound_eval['f1_weighted']}**\n",
+        "## 3. Tyre Compound Classifier\n",
+        f"> Identifies which tyre {driver} is on from lap data alone.\n\n",
+        f"| Metric | Value |\n|---|---|\n",
+        f"| F1 (macro) | **{compound_eval['f1_macro']}** |\n",
+        f"| F1 (weighted) | **{compound_eval['f1_weighted']}** |\n\n",
         "```\n" + compound_eval["classification_report"] + "\n```\n\n",
     ]
 
     # -------------------------------------------------------------------
     # 5. Undercut Detector
     # -------------------------------------------------------------------
-    _section("4/4 — Undercut Window Detector")
+    _section(f"4/4 — Undercut Detector for {driver}")
 
     undercut_model = UndercutDetector()
     undercut_model.fit(train_df)
     undercut_eval = undercut_model.evaluate(test_df)
+
     print(f"Windows flagged: {undercut_eval['windows_flagged']} / {undercut_eval['total_laps']} laps "
           f"({undercut_eval['window_rate_pct']:.1f}%)")
-    if undercut_eval["top_rounds_by_windows"]:
-        print("Top races by undercut windows:", undercut_eval["top_rounds_by_windows"])
+    undercut_model.save(models_dir / "undercut.pkl")
 
-    undercut_model.save(models_dir / f"undercut_{args.year}.pkl")
-
-    # Show undercut map for the last test race
-    if "EventName" in test_df.columns:
-        last_race = test_df[test_df["Round"] == test_df["Round"].max()]
-        event_name = last_race["EventName"].iloc[0]
-        scored = undercut_model.score_laps(last_race)
-        fig = plot_undercut_windows(scored, event_name=event_name)
-        fig.savefig(charts_dir / "undercut_windows_last_race.png")
-        print(f"Undercut window chart saved for: {event_name}")
+    # Show undercut chart for each test race
+    for race_name in test_race_names:
+        race_laps = test_df[test_df["EventName"] == race_name]
+        scored = undercut_model.score_laps(race_laps)
+        fig = plot_undercut_windows(scored, event_name=f"{driver} — {race_name}")
+        safe_name = race_name.replace(" ", "_").replace("/", "_")
+        fig.savefig(charts_dir / f"undercut_{safe_name}.png")
 
     report_lines += [
         "## 4. Undercut Detector\n",
-        f"- Windows flagged: **{undercut_eval['windows_flagged']}** / {undercut_eval['total_laps']} laps\n",
-        f"- Window rate: **{undercut_eval['window_rate_pct']}%**\n",
-        f"- Mean undercut score: **{undercut_eval['mean_undercut_score']}**\n",
+        f"> Flags laps where {driver} had an undercut opportunity.\n\n",
+        f"| Metric | Value |\n|---|---|\n",
+        f"| Windows flagged | **{undercut_eval['windows_flagged']}** / {undercut_eval['total_laps']} laps |\n",
+        f"| Window rate | **{undercut_eval['window_rate_pct']}%** |\n",
+        f"| Mean undercut score | **{undercut_eval['mean_undercut_score']}** |\n\n",
     ]
-    if undercut_eval["top_rounds_by_windows"]:
-        report_lines.append("- Top races by windows:\n")
-        for race, count in undercut_eval["top_rounds_by_windows"].items():
-            report_lines.append(f"  - {race}: {count} windows\n")
-    report_lines.append("\n")
 
     # -------------------------------------------------------------------
     # 6. Save report
     # -------------------------------------------------------------------
-    report_path = reports_dir / f"ml_report_{args.year}.md"
+    report_path = reports_dir / f"ml_report_{args.year}_{driver}.md"
     report_path.write_text("".join(report_lines), encoding="utf-8")
 
     _section("Done")
     print(f"Charts: {charts_dir}")
     print(f"Models: {models_dir}")
     print(f"Report: {report_path}")
+    print(f"\nTip: Re-run for a different driver using cached data:")
+    print(f"  py scripts/05_ml_season_models.py --year {args.year} --driver HAM --load-data outputs/reports/season_{args.year}_laps.csv")
 
 
 if __name__ == "__main__":
