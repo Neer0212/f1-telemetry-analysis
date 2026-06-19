@@ -7,6 +7,8 @@ outputs/charts/*
 outputs/reports/*
 !outputs/charts/.gitkeep
 !outputs/reports/.gitkeep
+outputs/models/
+outputs/reports/season_*.csv
 
 # Python
 __pycache__/
