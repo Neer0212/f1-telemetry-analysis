@@ -366,7 +366,7 @@ def plot_championship_progression(
     -------
     matplotlib.figure.Figure
     """
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(14, 7))
 
     if top_n is not None:
         final_round = standings["Round"].max()
@@ -377,14 +377,27 @@ def plot_championship_progression(
         )
         standings = standings[standings[entity_column].isin(top_entities)]
 
-    for entity, group in standings.groupby(entity_column):
+    entities = sorted(standings[entity_column].unique())
+
+    # Guaranteed distinct colors for up to 40 entities using two colormaps
+    import matplotlib.cm as _cm
+    _pool = [_cm.tab20(i) for i in range(20)] + [_cm.tab20b(i) for i in range(20)]
+    color_map = {e: _pool[i % len(_pool)] for i, e in enumerate(entities)}
+    linestyles = ["-", "--", "-.", ":"]
+
+    for i, (entity, group) in enumerate(standings.groupby(entity_column)):
         group = group.sort_values("Round")
-        ax.plot(group["Round"], group["Points"], marker="o", markersize=3, label=entity, linewidth=2)
+        ax.plot(
+            group["Round"], group["Points"],
+            marker="o", markersize=3, label=entity, linewidth=2,
+            color=color_map[entity],
+            linestyle=linestyles[i % len(linestyles)],
+        )
 
     ax.set_xlabel("Round")
     ax.set_ylabel("Points")
     ax.set_title(title)
-    ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1), borderaxespad=0)
+    ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1), borderaxespad=0, fontsize=9)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
     return fig
