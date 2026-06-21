@@ -23,6 +23,7 @@ from f1_analysis.core.telemetry import TelemetryComparison
 from f1_analysis.visualization.style import (
     get_compound_color,
     get_driver_style,
+    get_driver_color,
     get_team_color,
 )
 
@@ -65,7 +66,7 @@ def plot_lap_time_distribution(
             continue
         data.append(laps_to_seconds(driver_laps).dropna().values)
         labels.append(driver)
-        colors.append(get_team_color(driver, session))
+        colors.append(get_driver_color(driver, session))
 
     parts = ax.violinplot(data, showmedians=True)
     for body, color in zip(parts["bodies"], colors):
@@ -204,50 +205,47 @@ def plot_tire_strategy(session: Session, drivers: Optional[Sequence[str]] = None
     return fig
 
 
-def plot_speed_trace_comparison(comparison: TelemetryComparison, session: Session) -> Figure:
-    """
-    Overlay two drivers' speed traces across a lap, aligned by distance.
+def plot_speed_trace_comparison(comparison, session):
+    fig, ax = plt.subplots(figsize=(12, 5))
+    
+    color_a = get_driver_color(comparison.driver_a, session)
+    color_b = get_driver_color(comparison.driver_b, session)
+    
+    # Default line styles
+    style_a = "-"
+    style_b = "-"
+    
+    # If they are teammates, make driver_b stand out with a dashed line
+    if color_a == color_b:
+        style_b = "--" 
+        # Optional: you can also make it slightly lighter if preferred:
+        # import matplotlib.colors as mcolors
+        # color_b = mcolors.to_rgba(color_b, alpha=0.7)
 
-    The classic "qualifying battle" chart: both speed traces on the same
-    distance axis, making it immediately visible where one driver
-    carries more speed (braking points, corner exit, top speed on
-    straights).
-
-    Parameters
-    ----------
-    comparison:
-        Output of :func:`f1_analysis.core.telemetry.compare_driver_telemetry`.
-    session:
-        The session the comparison was generated from (for team colors).
-
-    Returns
-    -------
-    matplotlib.figure.Figure
-    """
-    fig, ax = plt.subplots(figsize=(12, 6))
-
-    style_a = get_driver_style(comparison.driver_a, session)
-    style_b = get_driver_style(comparison.driver_b, session)
-
+    # Plot Driver A
     ax.plot(
-        comparison.telemetry_a["Distance"],
-        comparison.telemetry_a["Speed"],
-        label=comparison.driver_a,
-        linewidth=1.8,
-        **style_a,
+        comparison.telemetry_a["Distance"], 
+        comparison.telemetry_a["Speed"], 
+        color=color_a, 
+        linestyle=style_a,
+        label=comparison.driver_a, 
+        linewidth=2
     )
+    
+    # Plot Driver B
     ax.plot(
-        comparison.telemetry_b["Distance"],
-        comparison.telemetry_b["Speed"],
-        label=comparison.driver_b,
-        linewidth=1.8,
-        **style_b,
+        comparison.telemetry_b["Distance"], # FIX: Changed from telemetry_a to telemetry_b
+        comparison.telemetry_b["Speed"], 
+        color=color_b, 
+        linestyle=style_b,
+        label=comparison.driver_b, 
+        linewidth=2
     )
-
+    
     ax.set_xlabel("Distance (m)")
     ax.set_ylabel("Speed (km/h)")
-    ax.set_title(f"Speed Trace — {comparison.driver_a} vs {comparison.driver_b}")
-    ax.legend(loc="lower right")
+    ax.set_title(f"Speed Trace: {comparison.driver_a} vs {comparison.driver_b}")
+    ax.legend()
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
     return fig
@@ -275,7 +273,8 @@ def plot_telemetry_delta(comparison: TelemetryComparison, session: Session) -> F
     """
     fig, ax = plt.subplots(figsize=(12, 4))
 
-    color_b = get_team_color(comparison.driver_b, session)
+    color_b = get_driver_color(comparison.driver_b, session)
+    
     ax.plot(comparison.delta_time["Distance"], comparison.delta_time["Delta"], color=color_b, linewidth=2)
     ax.axhline(0, color="white", linewidth=0.8, alpha=0.5, linestyle="--")
     ax.fill_between(

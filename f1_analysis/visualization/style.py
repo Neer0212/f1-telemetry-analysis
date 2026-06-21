@@ -10,6 +10,8 @@ is isolated to a single file.
 
 from __future__ import annotations
 
+import matplotlib.colors as mcolors
+import fastf1.plotting as f1_plotting
 import matplotlib.pyplot as plt
 import fastf1.plotting as f1_plotting
 from fastf1.core import Session
@@ -58,27 +60,39 @@ def get_team_color(team: str, session: Session) -> str:
     return f1_plotting.get_team_color(team, session)
 
 
-def get_driver_color(driver: str, session: Session) -> str:
+def get_driver_color(driver: str, session) -> str:
     """
-    Get the color associated with a driver (i.e. their team's color).
-
-    Note that teammates share a color -- use :func:`get_driver_style`
-    or ``fastf1.plotting.get_driver_style`` when comparing two drivers
-    from the same team, so line style/markers differentiate them.
-
-    Parameters
-    ----------
-    driver:
-        Driver abbreviation (e.g. ``"VER"``) or recognizable name part.
-    session:
-        The session providing season/team context.
-
-    Returns
-    -------
-    str
-        Hex color code.
+    Gets the official F1 color for a driver. 
+    Automatically generates a distinct, lighter shade for the second teammate to prevent clashing.
     """
-    return f1_plotting.get_driver_color(driver, session)
+    driver = str(driver).upper()
+    try:
+        base_color = f1_plotting.get_driver_color(driver, session)
+    except KeyError:
+        return "#888888"  
+
+    try:
+        driver_info = session.results[session.results['Abbreviation'] == driver]
+        if not driver_info.empty:
+            team_name = driver_info.iloc[0]['TeamName']
+            
+            # Get all teammates in this session
+            team_drivers = session.results[session.results['TeamName'] == team_name]['Abbreviation'].tolist()
+            
+            # CRITICAL: Sort alphabetically so the order is permanent (e.g., PER is always after VER)
+            team_drivers.sort()
+            
+            # If this is the second driver alphabetically, modify their color
+            if len(team_drivers) > 1 and team_drivers[1] == driver:
+                rgb = mcolors.to_rgb(base_color)
+                
+                # Make it significantly lighter/distinguishable by blending with white
+                lighter = tuple(min(1.0, c + (1.0 - c) * 0.55) for c in rgb)
+                return mcolors.to_hex(lighter)
+    except Exception:
+        pass 
+        
+    return base_color
 
 
 def get_driver_style(driver: str, session: Session, style: list | None = None) -> dict:
