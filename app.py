@@ -1,163 +1,371 @@
 import streamlit as st
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 st.set_page_config(
-    page_title="F1 Telemetry Analysis",
+    page_title="F1 Analytics Hub",
     page_icon="🏎️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ────────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-    /* Dark F1-themed sidebar */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 100%);
-    }
-    [data-testid="stSidebar"] * { color: #ffffff !important; }
+from f1_analysis.visualization.ui_theme import inject_f1_css, section_label, metrics_row
 
-    /* Main background */
-    .stApp { background-color: #0f0f0f; }
+inject_f1_css()
 
-    /* Hero card */
-    .hero {
-        background: linear-gradient(135deg, #1a0000 0%, #0a0a1e 50%, #001a0a 100%);
-        border: 1px solid #e10600;
-        border-radius: 12px;
-        padding: 2.5rem 3rem;
-        margin-bottom: 2rem;
-    }
-    .hero h1 { color: #e10600; font-size: 2.8rem; font-weight: 900; margin: 0; }
-    .hero p  { color: #cccccc; font-size: 1.1rem; margin-top: 0.5rem; }
-
-    /* Feature cards */
-    .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
-        margin: 1.5rem 0;
-    }
-    .feature-card {
-        background: #1a1a1a;
-        border: 1px solid #333;
-        border-radius: 8px;
-        padding: 1.2rem;
-        transition: border-color 0.2s;
-    }
-    .feature-card:hover { border-color: #e10600; }
-    .feature-card .icon  { font-size: 1.8rem; margin-bottom: 0.4rem; }
-    .feature-card h3     { color: #ffffff; font-size: 1rem; margin: 0 0 0.3rem; }
-    .feature-card p      { color: #888888; font-size: 0.85rem; margin: 0; }
-
-    /* Stat badges */
-    .stat-row { display: flex; gap: 1rem; margin: 1.5rem 0; }
-    .stat-badge {
-        background: #1a1a1a;
-        border: 1px solid #e10600;
-        border-radius: 8px;
-        padding: 0.8rem 1.5rem;
-        text-align: center;
-        flex: 1;
-    }
-    .stat-badge .num { color: #e10600; font-size: 2rem; font-weight: 900; }
-    .stat-badge .lbl { color: #888; font-size: 0.8rem; }
-
-    /* Section headers */
-    .section-header {
-        color: #ffffff;
-        font-size: 1.3rem;
-        font-weight: 700;
-        border-left: 4px solid #e10600;
-        padding-left: 0.8rem;
-        margin: 1.5rem 0 0.8rem;
-    }
-</style>
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("""
+<div style="padding: 1rem 0.5rem 1.2rem; border-bottom: 1px solid #2A2A2A; margin-bottom: 1rem;">
+    <div style="font-family: 'Titillium Web', sans-serif; font-size: 1.3rem; font-weight: 900;
+                color: #E8002D; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1;">
+        F1 Analytics
+    </div>
+    <div style="font-family: 'Inter', sans-serif; font-size: 0.68rem; color: #555;
+                text-transform: uppercase; letter-spacing: 0.15em; margin-top: 0.2rem;">
+        Hub
+    </div>
+</div>
+<div style="font-family: 'Titillium Web', sans-serif; font-size: 0.6rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.18em; color: #555; 
+            padding: 0 0.5rem 0.4rem; margin-bottom: 0.3rem;">
+    Navigation
+</div>
 """, unsafe_allow_html=True)
+
+    pages = [
+        ("📊", "Session Deep Dive",     "pages/1_Deep_Dive"),
+        ("⚔️",  "Head-to-Head",          "pages/2_Head_to_Head"),
+        ("🏆", "Championship",          "pages/3_Season_Championship"),
+        ("🗺️",  "Track Speed Map",       "pages/4_Track_Speed_Map"),
+        ("🤖", "ML Predictions",        "pages/5_Single_Race_Predict"),
+        ("📖", "Race Story",            "pages/6_Race_Story"),
+        ("⏱️",  "Qualifying Delta",      "pages/7_Quali_Delta"),
+        ("🛞", "Pit Stop Window",       "pages/8_Pit_Window"),
+        ("📈", "Multi-Season",          "pages/9_Multi_Season"),
+    ]
+    for icon, label, _ in pages:
+        st.markdown(f"""
+<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.6rem;
+            border-left:3px solid transparent;margin:1px 0;cursor:pointer;
+            font-family:'Titillium Web',sans-serif;font-size:0.75rem;
+            font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#AAAAAA;">
+    <span>{icon}</span><span>{label}</span>
+</div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+    st.markdown("""
+<div style="padding: 0.5rem; border: 1px solid #2A2A2A; margin-top: 1rem;
+            font-family: 'Inter', sans-serif; font-size: 0.72rem; color: #555;
+            text-align: center;">
+    Data via FastF1 · 2018–2026
+</div>""", unsafe_allow_html=True)
 
 # ── Hero ──────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div class="hero">
-    <h1>🏎️ F1 Telemetry Analysis</h1>
-    <p>Professional-grade Formula 1 data analysis — telemetry, strategy, machine learning predictions, and multi-season comparisons. Built on real FastF1 timing data from 2018 onwards.</p>
+<div style="background: #141414; border-bottom: 3px solid #E8002D; padding: 3rem 2.5rem 2.5rem;">
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.65rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.25em; color:#E8002D; margin-bottom:0.6rem;">
+        Formula 1 · Data & Telemetry Platform
+    </div>
+    <h1 style="font-family:'Titillium Web',sans-serif; font-size:3.5rem; font-weight:900;
+               color:#FFFFFF; margin:0; line-height:1; text-transform:uppercase; letter-spacing:-0.02em;">
+        F1 Analytics Hub
+    </h1>
+    <p style="font-family:'Inter',sans-serif; font-size:1rem; color:#777; margin:0.8rem 0 2rem;
+              max-width:55ch; line-height:1.6;">
+        Professional-grade Formula 1 data analysis. Telemetry, race strategy, 
+        championship trends, machine learning predictions — built on real FastF1 timing data.
+    </p>
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <span style="font-family:'Titillium Web',sans-serif; font-size:0.65rem; font-weight:700;
+                     text-transform:uppercase; letter-spacing:0.1em; padding:0.3rem 0.8rem;
+                     background:#E8002D; color:white;">Live Data</span>
+        <span style="font-family:'Titillium Web',sans-serif; font-size:0.65rem; font-weight:700;
+                     text-transform:uppercase; letter-spacing:0.1em; padding:0.3rem 0.8rem;
+                     background:#2A2A2A; color:#888;">2018 — 2026</span>
+        <span style="font-family:'Titillium Web',sans-serif; font-size:0.65rem; font-weight:700;
+                     text-transform:uppercase; letter-spacing:0.1em; padding:0.3rem 0.8rem;
+                     background:#2A2A2A; color:#888;">FastF1 Powered</span>
+        <span style="font-family:'Titillium Web',sans-serif; font-size:0.65rem; font-weight:700;
+                     text-transform:uppercase; letter-spacing:0.1em; padding:0.3rem 0.8rem;
+                     background:#2A2A2A; color:#888;">4 ML Models</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Stats row ─────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="stat-row">
-    <div class="stat-badge"><div class="num">9</div><div class="lbl">Analysis Tools</div></div>
-    <div class="stat-badge"><div class="num">4</div><div class="lbl">ML Models</div></div>
-    <div class="stat-badge"><div class="num">7+</div><div class="lbl">Seasons of Data</div></div>
-    <div class="stat-badge"><div class="num">20</div><div class="lbl">Drivers per Season</div></div>
-</div>
-""", unsafe_allow_html=True)
+# ── Stats strip ───────────────────────────────────────────────────────────────
+metrics_row([
+    {"label": "Analysis Tools",     "value": "9",    "color": "accent"},
+    {"label": "Seasons of Data",    "value": "8+"},
+    {"label": "ML Models",          "value": "4",    "color": "teal"},
+    {"label": "Drivers per Season", "value": "20"},
+    {"label": "Data Points / Race", "value": "100K+","color": "gold"},
+])
 
-# ── Feature grid ──────────────────────────────────────────────────────────────
-st.markdown('<div class="section-header">What you can do</div>', unsafe_allow_html=True)
+# ── Tools grid ────────────────────────────────────────────────────────────────
+section_label("Analysis Tools")
+
 st.markdown("""
-<div class="feature-grid">
-    <div class="feature-card">
-        <div class="icon">📊</div>
-        <h3>Session Deep Dive</h3>
-        <p>Lap time distributions, race pace consistency, and tire strategy for any session since 2018.</p>
+<div style="padding: 0 2.5rem;">
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:#2A2A2A;
+            border:1px solid #2A2A2A;">
+
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">📊</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Session Deep Dive
     </div>
-    <div class="feature-card">
-        <div class="icon">⚔️</div>
-        <h3>Head-to-Head Telemetry</h3>
-        <p>Speed traces, time deltas, and throttle/brake overlays for any two drivers' fastest laps.</p>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Lap time distributions, race pace consistency, and tire strategy for any session since 2018.
+        Supports Race, Qualifying, Sprint and all Free Practice sessions.
     </div>
-    <div class="feature-card">
-        <div class="icon">🏆</div>
-        <h3>Championship Progression</h3>
-        <p>Round-by-round points progression for drivers and constructors across a full season.</p>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 1
     </div>
-    <div class="feature-card">
-        <div class="icon">🗺️</div>
-        <h3>Track Speed Map</h3>
-        <p>Circuit outline painted by speed — see exactly where a driver is fastest and slowest.</p>
+  </div>
+
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">⚔️</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Head-to-Head Telemetry
     </div>
-    <div class="feature-card">
-        <div class="icon">⏱️</div>
-        <h3>Qualifying Delta Map</h3>
-        <p>Minisector-by-minisector comparison: green where driver A is faster, red where B is.</p>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Speed traces, time deltas, and throttle/brake overlays. See exactly where one driver 
+        gains or loses time on every corner of the lap.
     </div>
-    <div class="feature-card">
-        <div class="icon">🛞</div>
-        <h3>Pit Stop Window</h3>
-        <p>Optimal pit lap range with undercut threat detection and overcut viability analysis.</p>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 2
     </div>
-    <div class="feature-card">
-        <div class="icon">📈</div>
-        <h3>Multi-Season Comparison</h3>
-        <p>One driver across seasons, two drivers head-to-head, or a full circuit heatmap.</p>
+  </div>
+
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">🏆</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Championship Progression
     </div>
-    <div class="feature-card">
-        <div class="icon">📖</div>
-        <h3>Race Story</h3>
-        <p>Complete lap-by-lap narrative: pit stops, overtakes, incidents, undercut windows.</p>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Round-by-round points progression for Drivers' and Constructors' Championships. 
+        Watch any season unfold race by race.
     </div>
-    <div class="feature-card">
-        <div class="icon">🤖</div>
-        <h3>ML Predictions</h3>
-        <p>Lap time prediction, podium probability, tire identification, and undercut detection.</p>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 3
     </div>
+  </div>
+
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">🗺️</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Track Speed Map
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Circuit outline painted by speed — every sector, corner, and straight coloured 
+        from slowest to fastest. Understand a track at a glance.
+    </div>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 4
+    </div>
+  </div>
+
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">📖</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Race Story
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Lap-by-lap narrative of any driver's race: pit stops, overtakes, safety cars, 
+        undercut windows, and sector-by-sector pace breakdown.
+    </div>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 6
+    </div>
+  </div>
+
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">⏱️</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Qualifying Delta Map
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Minisector-by-minisector comparison. Green where driver A is faster, red where B 
+        is. Identify the exact corners deciding a lap.
+    </div>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 7
+    </div>
+  </div>
+
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">🛞</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Pit Stop Window
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Optimal pit lap range, undercut threat detection, and overcut viability analysis. 
+        For one driver or the entire field simultaneously.
+    </div>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 8
+    </div>
+  </div>
+
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">📈</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Multi-Season Comparison
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        One driver across seasons, head-to-head across years, or a full season circuit heatmap 
+        showing gap-to-pole at every round.
+    </div>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 9
+    </div>
+  </div>
+
+  <div style="background:#141414; padding:1.5rem; border-left: 3px solid #E8002D;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">🤖</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        ML Predictions
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Four trained models: lap time prediction, podium probability, tyre compound 
+        classification, and undercut opportunity detection.
+    </div>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 5
+    </div>
+  </div>
+
+</div>
 </div>
 """, unsafe_allow_html=True)
 
 # ── How to use ────────────────────────────────────────────────────────────────
-st.markdown('<div class="section-header">How to use</div>', unsafe_allow_html=True)
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown("**1. Pick a tool** from the sidebar on the left.")
-with col2:
-    st.markdown("**2. Enter the race details** — year, Grand Prix, session, drivers.")
-with col3:
-    st.markdown("**3. Hit Run** — data loads from FastF1 and charts appear instantly.")
+section_label("How It Works")
 
-st.info("💡 First load of a session downloads data from F1's servers (~10-30s). Every repeat load is instant thanks to local caching.", icon="ℹ️")
+st.markdown("""
+<div style="padding: 0 2.5rem;">
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:#2A2A2A;
+            border:1px solid #2A2A2A; margin-bottom:1.5rem;">
+  <div style="background:#141414; padding:1.5rem; display:flex; gap:1rem; align-items:flex-start;">
+    <div style="font-family:'Titillium Web',sans-serif; font-size:2rem; font-weight:900;
+                color:#2A2A2A; line-height:1; flex-shrink:0;">01</div>
+    <div>
+      <div style="font-family:'Titillium Web',sans-serif; font-size:0.78rem; font-weight:700;
+                  text-transform:uppercase; letter-spacing:0.1em; color:#FFFFFF; margin-bottom:0.3rem;">
+        Pick a Tool
+      </div>
+      <div style="font-family:'Inter',sans-serif; font-size:0.75rem; color:#555; line-height:1.5;">
+        Select any analysis from the sidebar navigation on the left.
+      </div>
+    </div>
+  </div>
+  <div style="background:#141414; padding:1.5rem; display:flex; gap:1rem; align-items:flex-start;">
+    <div style="font-family:'Titillium Web',sans-serif; font-size:2rem; font-weight:900;
+                color:#2A2A2A; line-height:1; flex-shrink:0;">02</div>
+    <div>
+      <div style="font-family:'Titillium Web',sans-serif; font-size:0.78rem; font-weight:700;
+                  text-transform:uppercase; letter-spacing:0.1em; color:#FFFFFF; margin-bottom:0.3rem;">
+        Enter Parameters
+      </div>
+      <div style="font-family:'Inter',sans-serif; font-size:0.75rem; color:#555; line-height:1.5;">
+        Set year, Grand Prix name, session type, and driver abbreviations.
+      </div>
+    </div>
+  </div>
+  <div style="background:#141414; padding:1.5rem; display:flex; gap:1rem; align-items:flex-start;">
+    <div style="font-family:'Titillium Web',sans-serif; font-size:2rem; font-weight:900;
+                color:#E8002D; line-height:1; flex-shrink:0;">03</div>
+    <div>
+      <div style="font-family:'Titillium Web',sans-serif; font-size:0.78rem; font-weight:700;
+                  text-transform:uppercase; letter-spacing:0.1em; color:#FFFFFF; margin-bottom:0.3rem;">
+        Run Analysis
+      </div>
+      <div style="font-family:'Inter',sans-serif; font-size:0.75rem; color:#555; line-height:1.5;">
+        Hit the red button. First load fetches from F1 servers (10–30s). Every repeat load is instant.
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
-st.markdown("---")
-st.markdown(
-    "<p style='color:#555; font-size:0.8rem; text-align:center;'>Built with FastF1 · Matplotlib · Scikit-learn · Streamlit &nbsp;|&nbsp; Data available from 2018 onward</p>",
-    unsafe_allow_html=True,
-)
+# ── Driver reference ──────────────────────────────────────────────────────────
+section_label("2024 Driver Reference")
+
+st.markdown("""
+<div style="padding: 0 2.5rem 3rem;">
+<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:#2A2A2A;
+            border:1px solid #2A2A2A;">
+""" + "".join([
+    f"""<div style="background:#141414; padding:0.8rem 1rem;">
+    <div style="font-family:'Titillium Web',sans-serif; font-size:1rem; font-weight:900;
+                color:#FFFFFF;">{code}</div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.68rem; color:#555;">{name}</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.6rem; font-weight:700;
+                color:{tcolor}; text-transform:uppercase; letter-spacing:0.05em; margin-top:0.15rem;">{team}</div>
+</div>"""
+    for code, name, team, tcolor in [
+        ("VER","Max Verstappen","Red Bull","#3671C6"),
+        ("PER","Sergio Perez","Red Bull","#3671C6"),
+        ("LEC","Charles Leclerc","Ferrari","#E8002D"),
+        ("SAI","Carlos Sainz","Ferrari","#E8002D"),
+        ("NOR","Lando Norris","McLaren","#FF8000"),
+        ("PIA","Oscar Piastri","McLaren","#FF8000"),
+        ("HAM","Lewis Hamilton","Mercedes","#27F4D2"),
+        ("RUS","George Russell","Mercedes","#27F4D2"),
+        ("ALO","Fernando Alonso","Aston Martin","#358C75"),
+        ("STR","Lance Stroll","Aston Martin","#358C75"),
+        ("GAS","Pierre Gasly","Alpine","#FF87BC"),
+        ("OCO","Esteban Ocon","Alpine","#FF87BC"),
+        ("ALB","Alexander Albon","Williams","#64C4FF"),
+        ("SAR","Logan Sargeant","Williams","#64C4FF"),
+        ("TSU","Yuki Tsunoda","RB","#6692FF"),
+        ("RIC","Daniel Ricciardo","RB","#6692FF"),
+        ("HUL","Nico Hulkenberg","Haas","#B6BABD"),
+        ("MAG","Kevin Magnussen","Haas","#B6BABD"),
+        ("BOT","Valtteri Bottas","Sauber","#52E252"),
+        ("ZHO","Guanyu Zhou","Sauber","#52E252"),
+    ]
+]) + """
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Footer ────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div style="border-top:1px solid #2A2A2A; padding:1.5rem 2.5rem;
+            display:flex; justify-content:space-between; align-items:center; margin-top:2rem;">
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.6rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.15em; color:#E8002D;">
+        F1 Analytics Hub
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.7rem; color:#333;">
+        Built with FastF1 · Matplotlib · Scikit-learn · Streamlit
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.7rem; color:#333;">
+        Data: 2018 — 2026
+    </div>
+</div>
+""", unsafe_allow_html=True)
