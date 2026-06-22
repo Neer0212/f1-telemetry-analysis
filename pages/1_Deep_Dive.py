@@ -32,3 +32,27 @@ if st.sidebar.button("Run Analysis"):
         
         st.subheader("Tire Strategy")
         st.pyplot(plot_tire_strategy(session, drivers))
+        # ── TEXT SUMMARY ──────────────────────────────────────────────
+        st.markdown("---")
+        st.subheader("📋 Session Summary")
+
+        from f1_analysis.core.lap_analysis import fastest_laps_by_driver, race_pace_summary, stint_summary, clean_lap_times, laps_to_seconds
+
+        clean = clean_lap_times(session.laps)
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            st.markdown("#### ⚡ Fastest Laps")
+            fastest = fastest_laps_by_driver(clean)[["Driver","LapTimeSeconds","Compound"]].head(10)
+            fastest["LapTimeSeconds"] = fastest["LapTimeSeconds"].round(3)
+            st.dataframe(fastest, use_container_width=True)
+
+        with col_b:
+            st.markdown("#### 📊 Race Pace (selected drivers)")
+            pace = race_pace_summary(clean[clean["Driver"].isin(drivers)]).round(3)
+            st.dataframe(pace, use_container_width=True)
+
+        st.markdown("#### 🛞 Tire Strategy")
+        strategy = stint_summary(session.laps)
+        strategy = strategy[strategy["Driver"].isin(drivers)][["Driver","Stint","Compound","LapCount","AvgLapTime"]].round(3)
+        st.dataframe(strategy, use_container_width=True)

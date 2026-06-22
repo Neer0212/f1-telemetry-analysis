@@ -25,6 +25,7 @@ def _load_race_story_module():
         Path(__file__).resolve().parent.parent / "scripts" / "07_race_story.py"
     )
     mod = importlib.util.module_from_spec(spec)
+    sys.modules["race_story"] = mod
     spec.loader.exec_module(mod)
     return mod
 
