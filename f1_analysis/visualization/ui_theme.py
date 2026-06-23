@@ -47,6 +47,12 @@ def inject_f1_css() -> None:
 <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
+/* ── Instant base — applied before anything else renders ─────────────── */
+html { background: #0D0D0D !important; }
+body { background: #0D0D0D !important; }
+[data-testid="stAppViewContainer"] { background: #0D0D0D !important; }
+[data-testid="stApp"] { background: #0D0D0D !important; }
+
 /* ── Reset & base ─────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -57,7 +63,10 @@ html, body, .stApp {
 }
 
 /* ── Hide Streamlit chrome we don't want ─────────────────────────────── */
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+/* Keep header visible so the sidebar collapse arrow remains accessible */
+header[data-testid="stHeader"] { background: transparent !important; }
 .stDeployButton { display: none !important; }
 [data-testid="stDecoration"] { display: none !important; }
 
@@ -70,14 +79,12 @@ html, body, .stApp {
 [data-testid="stSidebar"] > div:first-child {
     padding-top: 1rem;
 }
-/* ── Hide auto-generated Streamlit pages nav (duplicate) ─────────────── */
+/* ── Sidebar nav links — styled, NOT hidden ──────────────────────────── */
 [data-testid="stSidebarNav"] {
-    display: none !important;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
 }
-
-/* ── st.page_link nav items — match F1 theme ─────────────────────────── */
-[data-testid="stSidebar"] [data-testid="stPageLink"] a,
-[data-testid="stSidebar"] .stPageLink a {
+[data-testid="stSidebarNav"] a {
     display: flex !important;
     align-items: center !important;
     padding: 0.45rem 0.8rem !important;
@@ -86,34 +93,38 @@ html, body, .stApp {
     text-decoration: none !important;
     transition: all 0.12s !important;
     margin: 1px 0 !important;
-    background: transparent !important;
 }
-[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover,
-[data-testid="stSidebar"] .stPageLink a:hover {
+[data-testid="stSidebarNav"] a:hover {
     background: #1A1A1A !important;
     border-left-color: #E8002D !important;
 }
-[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"],
-[data-testid="stSidebar"] .stPageLink a[aria-current="page"] {
+[data-testid="stSidebarNav"] a[aria-current="page"] {
     background: #1A1A1A !important;
     border-left-color: #E8002D !important;
 }
-[data-testid="stSidebar"] [data-testid="stPageLink"] a p,
-[data-testid="stSidebar"] [data-testid="stPageLink"] a span,
-[data-testid="stSidebar"] .stPageLink a p,
-[data-testid="stSidebar"] .stPageLink a span {
+[data-testid="stSidebarNav"] a span {
     font-family: 'Titillium Web', sans-serif !important;
     font-size: 0.75rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.08em !important;
+    letter-spacing: 0.1em !important;
     color: #AAAAAA !important;
 }
-[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] p,
-[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] span,
-[data-testid="stSidebar"] .stPageLink a[aria-current="page"] p,
-[data-testid="stSidebar"] .stPageLink a[aria-current="page"] span {
+[data-testid="stSidebarNav"] a[aria-current="page"] span {
     color: #FFFFFF !important;
+}
+[data-testid="stSidebarNav"]::before {
+    content: 'Navigation';
+    display: block;
+    font-family: 'Titillium Web', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: #444;
+    padding: 0 0.8rem 0.5rem;
+    border-bottom: 1px solid #2A2A2A;
+    margin-bottom: 0.3rem;
 }
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] .stMarkdown p {
@@ -555,21 +566,30 @@ def panel(title: str, content_fn, *args, **kwargs) -> None:
     st.markdown("</div></div>", unsafe_allow_html=True)
 
 
-def sidebar_nav() -> None:
-    """Render the F1 Analytics nav menu in the sidebar using st.page_link."""
+def sidebar_nav(current_page: str = "") -> None:
+    """Render a custom nav menu in the sidebar."""
     pages = [
-        ("📊", "Session Deep Dive",  "1_Deep_Dive.py"),
-        ("⚔️",  "Head-to-Head",       "2_Head_to_Head.py"),
-        ("🏆", "Championship",       "3_Season_Championship.py"),
-        ("🗺️",  "Track Speed Map",    "4_Track_Speed_Map.py"),
-        ("🤖", "ML Predictions",     "5_Single_Race_Predict.py"),
-        ("📖", "Race Story",         "6_Race_Story.py"),
-        ("⏱️",  "Quali Delta",        "7_Quali_Delta.py"),
-        ("🛞", "Pit Window",         "8_Pit_Window.py"),
-        ("📈", "Multi-Season",       "9_Multi_Season.py"),
+        ("🏠", "Home",               "app"),
+        ("📊", "Session Deep Dive",  "1_Deep_Dive"),
+        ("⚔️",  "Head-to-Head",       "2_Head_to_Head"),
+        ("🏆", "Championship",       "3_Season_Championship"),
+        ("🗺️",  "Track Speed Map",    "4_Track_Speed_Map"),
+        ("🤖", "ML Predictions",     "5_Single_Race_Predict"),
+        ("📖", "Race Story",         "6_Race_Story"),
+        ("⏱️",  "Quali Delta",        "7_Quali_Delta"),
+        ("🛞", "Pit Window",         "8_Pit_Window"),
+        ("📈", "Multi-Season",       "9_Multi_Season"),
     ]
-    for icon, label, page_path in pages:
-        st.sidebar.page_link(page_path, label=f"{icon}  {label}")
+    nav_html = '<div class="f1-nav">'
+    for icon, label, key in pages:
+        active = "active" if key == current_page else ""
+        nav_html += f"""
+<div class="f1-nav-item {active}">
+    <span class="nav-icon">{icon}</span>
+    <span class="nav-label">{label}</span>
+</div>"""
+    nav_html += "</div>"
+    st.sidebar.markdown(nav_html, unsafe_allow_html=True)
 
 
 def apply_chart_style(fig, ax_or_axes=None) -> None:

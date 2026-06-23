@@ -1,24 +1,28 @@
 import streamlit as st
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+
+st.set_page_config(page_title="Race Story · F1 Analytics", page_icon="📖", layout="wide")
+
+from f1_analysis.visualization.ui_theme import (
+    inject_f1_css, page_header, section_label, metrics_row,
+    COMPOUND_COLORS, F1_RED, F1_GOLD, F1_TEAL
+)
+inject_f1_css()
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
-import sys, importlib, importlib.util
+import importlib, importlib.util
 import numpy as np
 import pandas as pd
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from f1_analysis.core.session_loader import load_session
 from f1_analysis.visualization.style import apply_f1_style
-from f1_analysis.visualization.ui_theme import (
-    inject_f1_css, page_header, section_label, metrics_row,
-    COMPOUND_COLORS, F1_RED, F1_GOLD, F1_TEAL, sidebar_nav
-)
-
 def _load_race_story_module():
     spec = importlib.util.spec_from_file_location(
         "race_story",
@@ -29,9 +33,6 @@ def _load_race_story_module():
     spec.loader.exec_module(mod)
     return mod
 
-st.set_page_config(page_title="Race Story · F1 Analytics", page_icon="📖", layout="wide")
-inject_f1_css()
-sidebar_nav()
 page_header("📖", "Race Analysis", "Race Story",
             "Lap-by-lap breakdown of a driver's race — pit stops, overtakes, safety cars, sector pace and undercut windows.")
 

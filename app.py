@@ -15,47 +15,20 @@ from f1_analysis.visualization.ui_theme import inject_f1_css, section_label, met
 
 inject_f1_css()
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ── Sidebar — logo only; Streamlit renders the real nav automatically ─────────
 with st.sidebar:
     st.markdown("""
-<div style="padding: 1rem 0.5rem 1.2rem; border-bottom: 1px solid #2A2A2A; margin-bottom: 1rem;">
+<div style="padding: 1rem 0.5rem 1.2rem; border-bottom: 1px solid #2A2A2A; margin-bottom: 0.5rem;">
     <div style="font-family: 'Titillium Web', sans-serif; font-size: 1.3rem; font-weight: 900;
                 color: #E8002D; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1;">
         F1 Analytics
     </div>
     <div style="font-family: 'Inter', sans-serif; font-size: 0.68rem; color: #555;
                 text-transform: uppercase; letter-spacing: 0.15em; margin-top: 0.2rem;">
-        Hub
+        Hub · FastF1 Powered
     </div>
 </div>
-<div style="font-family: 'Titillium Web', sans-serif; font-size: 0.6rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.18em; color: #555; 
-            padding: 0 0.5rem 0.4rem; margin-bottom: 0.3rem;">
-    Navigation
-</div>
 """, unsafe_allow_html=True)
-
-    pages = [
-        ("📊", "Session Deep Dive",  "pages/1_Deep_Dive.py"),
-        ("⚔️",  "Head-to-Head",       "pages/2_Head_to_Head.py"),
-        ("🏆", "Championship",       "pages/3_Season_Championship.py"),
-        ("🗺️",  "Track Speed Map",    "pages/4_Track_Speed_Map.py"),
-        ("🤖", "ML Predictions",     "pages/5_Single_Race_Predict.py"),
-        ("📖", "Race Story",         "pages/6_Race_Story.py"),
-        ("⏱️",  "Qualifying Delta",   "pages/7_Quali_Delta.py"),
-        ("🛞", "Pit Stop Window",    "pages/8_Pit_Window.py"),
-        ("📈", "Multi-Season",       "pages/9_Multi_Season.py"),
-    ]
-    for icon, label, page_path in pages:
-        st.page_link(page_path, label=f"{icon}  {label}")
-
-    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-    st.markdown("""
-<div style="padding: 0.5rem; border: 1px solid #2A2A2A; margin-top: 1rem;
-            font-family: 'Inter', sans-serif; font-size: 0.72rem; color: #555;
-            text-align: center;">
-    Data via FastF1 · 2018–2026
-</div>""", unsafe_allow_html=True)
 
 # ── Hero ──────────────────────────────────────────────────────────────────────
 st.markdown("""
