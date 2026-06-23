@@ -52,7 +52,7 @@ st.markdown("""
                      background:#E8002D; color:white;">Live Data</span>
         <span style="font-family:'Titillium Web',sans-serif; font-size:0.65rem; font-weight:700;
                      text-transform:uppercase; letter-spacing:0.1em; padding:0.3rem 0.8rem;
-                     background:#2A2A2A; color:#888;">2018 — 2026</span>
+                     background:#2A2A2A; color:#888;">2018 — present</span>
         <span style="font-family:'Titillium Web',sans-serif; font-size:0.65rem; font-weight:700;
                      text-transform:uppercase; letter-spacing:0.1em; padding:0.3rem 0.8rem;
                      background:#2A2A2A; color:#888;">FastF1 Powered</span>
@@ -65,8 +65,8 @@ st.markdown("""
 
 # ── Stats strip ───────────────────────────────────────────────────────────────
 metrics_row([
-    {"label": "Analysis Tools",     "value": "9",    "color": "accent"},
-    {"label": "Seasons of Data",    "value": "8+"},
+    {"label": "Analysis Tools",     "value": "10",   "color": "accent"},
+    {"label": "Seasons of Data",    "value": "9+"},
     {"label": "ML Models",          "value": "4",    "color": "teal"},
     {"label": "Drivers per Season", "value": "20"},
     {"label": "Data Points / Race", "value": "100K+","color": "gold"},
@@ -208,6 +208,22 @@ st.markdown("""
     </div>
   </div>
 
+  <div style="background:#141414; padding:1.5rem;">
+    <div style="font-size:1.4rem; margin-bottom:0.7rem;">🛞</div>
+    <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.08em; color:#FFFFFF; margin-bottom:0.4rem;">
+        Tyre Degradation
+    </div>
+    <div style="font-family:'Inter',sans-serif; font-size:0.78rem; color:#666; line-height:1.5;">
+        Real lap-time degradation curves per compound. See cliff laps, stint lengths,
+        and compound delta from actual race data — not ML predictions.
+    </div>
+    <div style="margin-top:0.8rem; font-family:'Titillium Web',sans-serif; font-size:0.6rem;
+                font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:#E8002D;">
+        → Page 10
+    </div>
+  </div>
+
   <div style="background:#141414; padding:1.5rem; border-left: 3px solid #E8002D;">
     <div style="font-size:1.4rem; margin-bottom:0.7rem;">🤖</div>
     <div style="font-family:'Titillium Web',sans-serif; font-size:0.85rem; font-weight:700;
@@ -279,7 +295,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Driver reference ──────────────────────────────────────────────────────────
-section_label("2024 Driver Reference")
+section_label("2026 Driver Reference")
 
 st.markdown("""
 <div style="padding: 0 2.5rem 3rem;">
@@ -294,26 +310,28 @@ st.markdown("""
                 color:{tcolor}; text-transform:uppercase; letter-spacing:0.05em; margin-top:0.15rem;">{team}</div>
 </div>"""
     for code, name, team, tcolor in [
-        ("VER","Max Verstappen","Red Bull","#3671C6"),
-        ("PER","Sergio Perez","Red Bull","#3671C6"),
-        ("LEC","Charles Leclerc","Ferrari","#E8002D"),
-        ("SAI","Carlos Sainz","Ferrari","#E8002D"),
-        ("NOR","Lando Norris","McLaren","#FF8000"),
-        ("PIA","Oscar Piastri","McLaren","#FF8000"),
-        ("HAM","Lewis Hamilton","Mercedes","#27F4D2"),
-        ("RUS","George Russell","Mercedes","#27F4D2"),
-        ("ALO","Fernando Alonso","Aston Martin","#358C75"),
-        ("STR","Lance Stroll","Aston Martin","#358C75"),
-        ("GAS","Pierre Gasly","Alpine","#FF87BC"),
-        ("OCO","Esteban Ocon","Alpine","#FF87BC"),
-        ("ALB","Alexander Albon","Williams","#64C4FF"),
-        ("SAR","Logan Sargeant","Williams","#64C4FF"),
-        ("TSU","Yuki Tsunoda","RB","#6692FF"),
-        ("RIC","Daniel Ricciardo","RB","#6692FF"),
-        ("HUL","Nico Hulkenberg","Haas","#B6BABD"),
-        ("MAG","Kevin Magnussen","Haas","#B6BABD"),
-        ("BOT","Valtteri Bottas","Sauber","#52E252"),
-        ("ZHO","Guanyu Zhou","Sauber","#52E252"),
+        ("VER", "Max Verstappen", "Red Bull Racing", "#3671C6"),
+        ("HAD", "Isack Hadjar", "Red Bull Racing", "#3671C6"),
+        ("LEC", "Charles Leclerc", "Ferrari", "#E8002D"),
+        ("HAM", "Lewis Hamilton", "Ferrari", "#E8002D"),
+        ("NOR", "Lando Norris", "McLaren", "#FF8000"),
+        ("PIA", "Oscar Piastri", "McLaren", "#FF8000"),
+        ("RUS", "George Russell", "Mercedes", "#27F4D2"),
+        ("ANT", "Andrea Kimi Antonelli", "Mercedes", "#27F4D2"),
+        ("ALO", "Fernando Alonso", "Aston Martin", "#358C75"),
+        ("STR", "Lance Stroll", "Aston Martin", "#358C75"),
+        ("GAS", "Pierre Gasly", "Alpine", "#FF87BC"),
+        ("COL", "Franco Colapinto", "Alpine", "#FF87BC"),
+        ("ALB", "Alexander Albon", "Williams", "#64C4FF"),
+        ("SAI", "Carlos Sainz Jr.", "Williams", "#64C4FF"),
+        ("LAW", "Liam Lawson", "Racing Bulls", "#6692FF"),
+        ("LIN", "Arvid Lindblad", "Racing Bulls", "#6692FF"),
+        ("OCO", "Esteban Ocon", "Haas", "#B6BABD"),
+        ("BEA", "Oliver Bearman", "Haas", "#B6BABD"),
+        ("HUL", "Nico Hülkenberg", "Audi", "#EB4526"),
+        ("BOR", "Gabriel Bortoleto", "Audi", "#EB4526"),
+        ("PER", "Sergio Pérez", "Cadillac", "#FFFFFF"),
+        ("BOT", "Valtteri Bottas", "Cadillac", "#FFFFFF"),
     ]
 ]) + """
 </div>
@@ -332,7 +350,7 @@ st.markdown("""
         Built with FastF1 · Matplotlib · Scikit-learn · Streamlit
     </div>
     <div style="font-family:'Inter',sans-serif; font-size:0.7rem; color:#333;">
-        Data: 2018 — 2026
+        Data: 2018 — present
     </div>
 </div>
 """, unsafe_allow_html=True)

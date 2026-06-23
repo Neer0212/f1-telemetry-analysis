@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 
 from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
 inject_f1_css()
+page_header(
+    "🔧",
+    "Strategy Analysis",
+    "Pit Window",
+    "Optimal pit-stop windows and undercut/overcut opportunities."
+)
 
 EXPLAIN = """<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;
 padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;
