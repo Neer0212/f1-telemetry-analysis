@@ -5,12 +5,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 st.set_page_config(page_title="Championship · F1 Analytics", page_icon="🏆", layout="wide")
 
-from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, sidebar_nav
 from f1_analysis.core.season import build_driver_standings_progression, build_team_standings_progression
 from f1_analysis.visualization.style import apply_f1_style
 from f1_analysis.visualization.plots import plot_championship_progression
 
 inject_f1_css()
+sidebar_nav()
 page_header("🏆", "Season Analysis", "Championship Progression",
             "Round-by-round points accumulation for the Drivers' and Constructors' Championships.")
 

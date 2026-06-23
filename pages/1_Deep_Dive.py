@@ -5,13 +5,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 st.set_page_config(page_title="Session Deep Dive · F1 Analytics", page_icon="📊", layout="wide")
 
-from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row, sidebar_nav
 from f1_analysis.core.session_loader import load_session
 from f1_analysis.core.lap_analysis import fastest_laps_by_driver, clean_lap_times
 from f1_analysis.visualization.style import apply_f1_style
 from f1_analysis.visualization.plots import plot_lap_time_distribution, plot_race_pace, plot_tire_strategy
 
 inject_f1_css()
+sidebar_nav()
 page_header("📊", "Analysis Tool", "Session Deep Dive",
             "Lap time distributions, race pace consistency, and tyre strategy for any session from 2018 onward.")
 

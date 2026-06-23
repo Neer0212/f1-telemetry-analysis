@@ -5,13 +5,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 st.set_page_config(page_title="Head to Head · F1 Analytics", page_icon="⚔️", layout="wide")
 
-from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row, sidebar_nav
 from f1_analysis.core.session_loader import load_session
 from f1_analysis.core.telemetry import compare_driver_telemetry
 from f1_analysis.visualization.style import apply_f1_style
 from f1_analysis.visualization.plots import plot_speed_trace_comparison, plot_telemetry_delta, plot_throttle_brake_comparison
 
 inject_f1_css()
+sidebar_nav()
 page_header("⚔️", "Telemetry Comparison", "Head-to-Head",
             "Speed traces, time deltas, and throttle/brake overlays. See exactly where one driver gains or loses time.")
 

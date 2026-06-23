@@ -5,8 +5,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 st.set_page_config(page_title="ML Predictions · F1 Analytics", page_icon="🤖", layout="wide")
 
-from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row, sidebar_nav
 inject_f1_css()
+sidebar_nav()
 page_header("🤖", "Machine Learning", "Race Predictions",
             "Four trained models: lap time prediction, podium probability, tyre compound classification, and undercut detection.")
 

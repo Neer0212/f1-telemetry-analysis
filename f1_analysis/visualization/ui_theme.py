@@ -70,12 +70,14 @@ html, body, .stApp {
 [data-testid="stSidebar"] > div:first-child {
     padding-top: 1rem;
 }
-/* ── Sidebar nav links — styled, NOT hidden ──────────────────────────── */
+/* ── Hide auto-generated Streamlit pages nav (duplicate) ─────────────── */
 [data-testid="stSidebarNav"] {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+    display: none !important;
 }
-[data-testid="stSidebarNav"] a {
+
+/* ── st.page_link nav items — match F1 theme ─────────────────────────── */
+[data-testid="stSidebar"] [data-testid="stPageLink"] a,
+[data-testid="stSidebar"] .stPageLink a {
     display: flex !important;
     align-items: center !important;
     padding: 0.45rem 0.8rem !important;
@@ -84,38 +86,34 @@ html, body, .stApp {
     text-decoration: none !important;
     transition: all 0.12s !important;
     margin: 1px 0 !important;
+    background: transparent !important;
 }
-[data-testid="stSidebarNav"] a:hover {
+[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover,
+[data-testid="stSidebar"] .stPageLink a:hover {
     background: #1A1A1A !important;
     border-left-color: #E8002D !important;
 }
-[data-testid="stSidebarNav"] a[aria-current="page"] {
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"],
+[data-testid="stSidebar"] .stPageLink a[aria-current="page"] {
     background: #1A1A1A !important;
     border-left-color: #E8002D !important;
 }
-[data-testid="stSidebarNav"] a span {
+[data-testid="stSidebar"] [data-testid="stPageLink"] a p,
+[data-testid="stSidebar"] [data-testid="stPageLink"] a span,
+[data-testid="stSidebar"] .stPageLink a p,
+[data-testid="stSidebar"] .stPageLink a span {
     font-family: 'Titillium Web', sans-serif !important;
     font-size: 0.75rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.1em !important;
+    letter-spacing: 0.08em !important;
     color: #AAAAAA !important;
 }
-[data-testid="stSidebarNav"] a[aria-current="page"] span {
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] p,
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] span,
+[data-testid="stSidebar"] .stPageLink a[aria-current="page"] p,
+[data-testid="stSidebar"] .stPageLink a[aria-current="page"] span {
     color: #FFFFFF !important;
-}
-[data-testid="stSidebarNav"]::before {
-    content: 'Navigation';
-    display: block;
-    font-family: 'Titillium Web', sans-serif;
-    font-size: 0.6rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    color: #444;
-    padding: 0 0.8rem 0.5rem;
-    border-bottom: 1px solid #2A2A2A;
-    margin-bottom: 0.3rem;
 }
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] .stMarkdown p {
@@ -557,30 +555,21 @@ def panel(title: str, content_fn, *args, **kwargs) -> None:
     st.markdown("</div></div>", unsafe_allow_html=True)
 
 
-def sidebar_nav(current_page: str = "") -> None:
-    """Render a custom nav menu in the sidebar."""
+def sidebar_nav() -> None:
+    """Render the F1 Analytics nav menu in the sidebar using st.page_link."""
     pages = [
-        ("🏠", "Home",               "app"),
-        ("📊", "Session Deep Dive",  "1_Deep_Dive"),
-        ("⚔️",  "Head-to-Head",       "2_Head_to_Head"),
-        ("🏆", "Championship",       "3_Season_Championship"),
-        ("🗺️",  "Track Speed Map",    "4_Track_Speed_Map"),
-        ("🤖", "ML Predictions",     "5_Single_Race_Predict"),
-        ("📖", "Race Story",         "6_Race_Story"),
-        ("⏱️",  "Quali Delta",        "7_Quali_Delta"),
-        ("🛞", "Pit Window",         "8_Pit_Window"),
-        ("📈", "Multi-Season",       "9_Multi_Season"),
+        ("📊", "Session Deep Dive",  "1_Deep_Dive.py"),
+        ("⚔️",  "Head-to-Head",       "2_Head_to_Head.py"),
+        ("🏆", "Championship",       "3_Season_Championship.py"),
+        ("🗺️",  "Track Speed Map",    "4_Track_Speed_Map.py"),
+        ("🤖", "ML Predictions",     "5_Single_Race_Predict.py"),
+        ("📖", "Race Story",         "6_Race_Story.py"),
+        ("⏱️",  "Quali Delta",        "7_Quali_Delta.py"),
+        ("🛞", "Pit Window",         "8_Pit_Window.py"),
+        ("📈", "Multi-Season",       "9_Multi_Season.py"),
     ]
-    nav_html = '<div class="f1-nav">'
-    for icon, label, key in pages:
-        active = "active" if key == current_page else ""
-        nav_html += f"""
-<div class="f1-nav-item {active}">
-    <span class="nav-icon">{icon}</span>
-    <span class="nav-label">{label}</span>
-</div>"""
-    nav_html += "</div>"
-    st.sidebar.markdown(nav_html, unsafe_allow_html=True)
+    for icon, label, page_path in pages:
+        st.sidebar.page_link(page_path, label=f"{icon}  {label}")
 
 
 def apply_chart_style(fig, ax_or_axes=None) -> None:

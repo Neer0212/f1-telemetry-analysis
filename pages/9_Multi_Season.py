@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 st.set_page_config(page_title="Multi-Season · F1 Analytics", page_icon="📈", layout="wide")
 
-from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row, sidebar_nav
 from f1_analysis.core.multi_season import (
     compare_driver_across_seasons,
     compare_two_drivers_across_seasons,
@@ -17,6 +17,7 @@ from f1_analysis.core.multi_season import (
 from f1_analysis.visualization.style import apply_f1_style
 
 inject_f1_css()
+sidebar_nav()
 page_header("📈", "Historical Analysis", "Multi-Season Comparison",
             "One driver across seasons, head-to-head across years, or a full season circuit performance heatmap.")
 

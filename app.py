@@ -36,24 +36,18 @@ with st.sidebar:
 """, unsafe_allow_html=True)
 
     pages = [
-        ("📊", "Session Deep Dive",     "pages/1_Deep_Dive"),
-        ("⚔️",  "Head-to-Head",          "pages/2_Head_to_Head"),
-        ("🏆", "Championship",          "pages/3_Season_Championship"),
-        ("🗺️",  "Track Speed Map",       "pages/4_Track_Speed_Map"),
-        ("🤖", "ML Predictions",        "pages/5_Single_Race_Predict"),
-        ("📖", "Race Story",            "pages/6_Race_Story"),
-        ("⏱️",  "Qualifying Delta",      "pages/7_Quali_Delta"),
-        ("🛞", "Pit Stop Window",       "pages/8_Pit_Window"),
-        ("📈", "Multi-Season",          "pages/9_Multi_Season"),
+        ("📊", "Session Deep Dive",  "pages/1_Deep_Dive.py"),
+        ("⚔️",  "Head-to-Head",       "pages/2_Head_to_Head.py"),
+        ("🏆", "Championship",       "pages/3_Season_Championship.py"),
+        ("🗺️",  "Track Speed Map",    "pages/4_Track_Speed_Map.py"),
+        ("🤖", "ML Predictions",     "pages/5_Single_Race_Predict.py"),
+        ("📖", "Race Story",         "pages/6_Race_Story.py"),
+        ("⏱️",  "Qualifying Delta",   "pages/7_Quali_Delta.py"),
+        ("🛞", "Pit Stop Window",    "pages/8_Pit_Window.py"),
+        ("📈", "Multi-Season",       "pages/9_Multi_Season.py"),
     ]
-    for icon, label, _ in pages:
-        st.markdown(f"""
-<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.6rem;
-            border-left:3px solid transparent;margin:1px 0;cursor:pointer;
-            font-family:'Titillium Web',sans-serif;font-size:0.75rem;
-            font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#AAAAAA;">
-    <span>{icon}</span><span>{label}</span>
-</div>""", unsafe_allow_html=True)
+    for icon, label, page_path in pages:
+        st.page_link(page_path, label=f"{icon}  {label}")
 
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     st.markdown("""

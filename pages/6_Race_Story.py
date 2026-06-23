@@ -16,7 +16,7 @@ from f1_analysis.core.session_loader import load_session
 from f1_analysis.visualization.style import apply_f1_style
 from f1_analysis.visualization.ui_theme import (
     inject_f1_css, page_header, section_label, metrics_row,
-    COMPOUND_COLORS, F1_RED, F1_GOLD, F1_TEAL
+    COMPOUND_COLORS, F1_RED, F1_GOLD, F1_TEAL, sidebar_nav
 )
 
 def _load_race_story_module():
@@ -31,6 +31,7 @@ def _load_race_story_module():
 
 st.set_page_config(page_title="Race Story · F1 Analytics", page_icon="📖", layout="wide")
 inject_f1_css()
+sidebar_nav()
 page_header("📖", "Race Analysis", "Race Story",
             "Lap-by-lap breakdown of a driver's race — pit stops, overtakes, safety cars, sector pace and undercut windows.")
 
