@@ -1,7 +1,26 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import streamlit as st
+st.set_page_config(page_title="Head to Head", page_icon="⚔️", layout="wide")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+inject_f1_css()
+
+EXPLAIN = """<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;
+padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;
+font-family:'Inter',sans-serif;">{text}</div>"""
+
+INSIGHT = """<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;
+padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;">
+<div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;
+text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div>
+{text}</div>"""
+
 import pandas as pd
 import numpy as np
 
@@ -12,31 +31,8 @@ from f1_analysis.visualization.plots import (
     plot_speed_trace_comparison, plot_telemetry_delta, plot_throttle_brake_comparison,
 )
 
-st.set_page_config(page_title="Head to Head", page_icon="⚔️", layout="wide")
 
-SHARED_CSS = """
-<style>
-.page-header { background:linear-gradient(90deg,#1a0000,#0a0a1e);border-left:4px solid #e10600;
-  padding:1.2rem 1.5rem;border-radius:0 8px 8px 0;margin-bottom:1.5rem; }
-.page-header h1{color:#fff;margin:0;font-size:1.8rem;}
-.page-header p{color:#aaa;margin:.3rem 0 0;font-size:.95rem;}
-.explain-box{background:#111827;border:1px solid #1f2937;border-left:3px solid #e10600;
-  border-radius:6px;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#d1d5db;
-  font-size:.9rem;line-height:1.6;}
-.insight-box{background:#0d1117;border:1px solid #21262d;border-radius:8px;
-  padding:1rem 1.3rem;margin-top:1rem;}
-.insight-box h4{color:#e10600;margin:0 0 .6rem;font-size:1rem;}
-.winner-banner{background:linear-gradient(90deg,#1a2a0a,#0a1a0a);
-  border:1px solid #27ae60;border-radius:8px;padding:1rem 1.5rem;
-  color:#27ae60;font-size:1.1rem;font-weight:700;text-align:center;margin:.8rem 0;}
-</style>
-"""
 
-st.markdown(SHARED_CSS + """
-<div class="page-header">
-    <h1>⚔️ Driver Head-to-Head</h1>
-    <p>Telemetry-level comparison of two drivers' fastest laps — speed, braking, throttle, and time gained/lost at every metre of the circuit.</p>
-</div>""", unsafe_allow_html=True)
 
 st.sidebar.header("Select Drivers")
 year        = st.sidebar.number_input("Year", 2018, 2026, 2024)
@@ -62,7 +58,7 @@ if st.sidebar.button("Compare Drivers", type="primary"):
     loser       = driver_b if winner == driver_a else driver_a
     gap_str     = f"{abs(final_delta):.3f}s"
 
-    st.markdown(f"""<div class="winner-banner">
+    st.markdown(f"""<div style="background:linear-gradient(90deg,#1a2a0a,#0a1a0a);border:1px solid #27ae60;border-radius:4px;padding:1rem 1.5rem;color:#27ae60;font-size:1.1rem;font-weight:700;text-align:center;margin:.8rem 0;">
     🏆 {winner} was faster by {gap_str} over the lap — {loser} needs to find {gap_str} somewhere on track
     </div>""", unsafe_allow_html=True)
 
@@ -79,7 +75,7 @@ if st.sidebar.button("Compare Drivers", type="primary"):
     # ════════════════════════════════════════════════════════════
     st.markdown("---")
     st.subheader("🚀 Speed Trace")
-    st.markdown("""<div class="explain-box">
+    st.markdown("""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
     <strong>What this chart shows:</strong> Both drivers' speed (km/h) plotted against their
     distance around the lap (metres). Where the two lines <strong>overlap</strong> — identical
     pace. Where one line is <strong>above the other</strong> — that driver is going faster at
@@ -94,7 +90,7 @@ if st.sidebar.button("Compare Drivers", type="primary"):
     max_a = comparison.telemetry_a["Speed"].max()
     max_b = comparison.telemetry_b["Speed"].max()
     faster_top = driver_a if max_a > max_b else driver_b
-    st.markdown(f"""<div class="insight-box"><h4>🔍 Speed analysis</h4>
+    st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 Speed analysis</h4>
     <ul>
     <li><strong>{driver_a}</strong> top speed: <strong>{max_a:.0f} km/h</strong></li>
     <li><strong>{driver_b}</strong> top speed: <strong>{max_b:.0f} km/h</strong></li>
@@ -103,14 +99,14 @@ if st.sidebar.button("Compare Drivers", type="primary"):
     <li>Look for where the lines <em>diverge in corners</em> — that's where driving style
     differences are most visible. Carrying more speed through a corner without losing the
     rear is the hardest skill in F1.</li>
-    </ul></div>""", unsafe_allow_html=True)
+    </ul></div></div>""", unsafe_allow_html=True)
 
     # ════════════════════════════════════════════════════════════
     # CHART 2: TIME DELTA
     # ════════════════════════════════════════════════════════════
     st.markdown("---")
     st.subheader("⏱️ Time Delta — Where the Lap Is Won and Lost")
-    st.markdown(f"""<div class="explain-box">
+    st.markdown(f"""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
     <strong>What this chart shows:</strong> The <strong>cumulative time gap</strong> between
     {driver_a} and {driver_b} at every metre of the lap. When the line moves
     <strong>downward</strong>, {driver_a} is gaining time. When it moves
@@ -126,7 +122,7 @@ if st.sidebar.button("Compare Drivers", type="primary"):
     delta_df   = comparison.delta_time
     max_gain_idx = delta_df["Delta"].idxmax()
     max_loss_idx = delta_df["Delta"].idxmin()
-    st.markdown(f"""<div class="insight-box"><h4>🔍 Time delta breakdown</h4>
+    st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 Time delta breakdown</h4>
     <ul>
     <li>Overall gap: <strong>{winner}</strong> faster by <strong>{gap_str}</strong></li>
     <li>Peak advantage for {driver_a}: at {delta_df.loc[max_loss_idx,'Distance']:.0f}m
@@ -135,14 +131,14 @@ if st.sidebar.button("Compare Drivers", type="primary"):
     ({abs(delta_df.loc[max_gain_idx,'Delta']):.3f}s ahead)</li>
     <li>The flatter sections of the chart = drivers are evenly matched there.
     Steep sections = one driver is significantly faster through that part of the circuit.</li>
-    </ul></div>""", unsafe_allow_html=True)
+    </ul></div></div>""", unsafe_allow_html=True)
 
     # ════════════════════════════════════════════════════════════
     # CHART 3: THROTTLE & BRAKE
     # ════════════════════════════════════════════════════════════
     st.markdown("---")
     st.subheader("🎮 Throttle & Brake Application")
-    st.markdown("""<div class="explain-box">
+    st.markdown("""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
     <strong>What this chart shows:</strong> <em>Top panel</em> — throttle application
     (0% = fully off throttle, 100% = flat out). <em>Bottom panel</em> — braking
     (100% = full brake, 0% = no brake). Where one driver is at 100% throttle and the
@@ -157,7 +153,7 @@ if st.sidebar.button("Compare Drivers", type="primary"):
     avg_throttle_a = comparison.telemetry_a["Throttle"].mean()
     avg_throttle_b = comparison.telemetry_b["Throttle"].mean()
     more_throttle  = driver_a if avg_throttle_a > avg_throttle_b else driver_b
-    st.markdown(f"""<div class="insight-box"><h4>🔍 Driving style</h4>
+    st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 Driving style</h4>
     <ul>
     <li><strong>{driver_a}</strong> average throttle: <strong>{avg_throttle_a:.1f}%</strong></li>
     <li><strong>{driver_b}</strong> average throttle: <strong>{avg_throttle_b:.1f}%</strong></li>
@@ -166,4 +162,4 @@ if st.sidebar.button("Compare Drivers", type="primary"):
     or a different setup allowing earlier power application.</li>
     <li>Look at corners where the throttle traces diverge significantly — these are
     where driving technique and car setup are creating meaningful lap time differences.</li>
-    </ul></div>""", unsafe_allow_html=True)
+    </ul></div></div>""", unsafe_allow_html=True)

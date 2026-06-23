@@ -1,28 +1,32 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import streamlit as st
+st.set_page_config(page_title="Pit Window", page_icon="🛞", layout="wide")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+inject_f1_css()
+
+EXPLAIN = """<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;
+padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;
+font-family:'Inter',sans-serif;">{text}</div>"""
+
+INSIGHT = """<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;
+padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;">
+<div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;
+text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div>
+{text}</div>"""
+
 import pandas as pd
 
 from f1_analysis.core.session_loader import load_session
 from f1_analysis.core.pit_window import calculate_pit_window, calculate_all_pit_windows
 from f1_analysis.visualization.style import apply_f1_style, get_driver_color
 
-st.set_page_config(page_title="Pit Window", page_icon="🛞", layout="wide")
-st.markdown("""<style>
-.page-header{background:linear-gradient(90deg,#1a0000,#0a0a1e);border-left:4px solid #e10600;
-  padding:1.2rem 1.5rem;border-radius:0 8px 8px 0;margin-bottom:1.5rem;}
-.page-header h1{color:#fff;margin:0;font-size:1.8rem;}
-.page-header p{color:#aaa;margin:.3rem 0 0;font-size:.95rem;}
-.explain-box{background:#111827;border:1px solid #1f2937;border-left:3px solid #e10600;
-  border-radius:6px;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#d1d5db;font-size:.9rem;line-height:1.6;}
-.insight-box{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:1rem 1.3rem;margin-top:1rem;}
-.insight-box h4{color:#e10600;margin:0 0 .6rem;font-size:1rem;}
-</style>
-<div class="page-header">
-    <h1>🛞 Pit Stop Window Calculator</h1>
-    <p>Find the optimal lap to pit — including undercut threat, overcut potential, and tyre degradation analysis.</p>
-</div>""", unsafe_allow_html=True)
 
 # ── Explainer ─────────────────────────────────────────────────────────────────
 with st.expander("📖 How does pit strategy work? (click to learn)"):
@@ -89,7 +93,7 @@ if st.sidebar.button("Calculate Pit Window", type="primary"):
         # ── Visual ─────────────────────────────────────────────────
         st.markdown("---")
         st.subheader("📊 Pit Window Visualisation")
-        st.markdown("""<div class="explain-box">
+        st.markdown("""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
         <strong>How to read this chart:</strong> The coloured bar shows the
         <strong>viable pit window</strong> — laps where pitting makes strategic sense.
         The <strong>gold vertical line</strong> is the recommended optimal lap.
@@ -121,13 +125,13 @@ if st.sidebar.button("Calculate Pit Window", type="primary"):
         ax.set_title(f"Pit Window — {driver} — {session.event['EventName']} {year}", color="white")
         fig.tight_layout(); st.pyplot(fig); plt.close(fig)
 
-        st.markdown(f"""<div class="insight-box"><h4>🔍 What to do</h4>
+        st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 What to do</h4>
         <ul>
         <li>The <strong>ideal pit lap is {result.optimal_lap}</strong>. Pitting here balances
         recovering the pit stop time loss with the fresh tyre advantage.</li>
         <li>{"⚠️ <strong>Undercut risk:</strong> The car behind could undercut by Lap " + str(result.undercut_threat_lap) + ". Consider pitting on Lap " + str(result.optimal_lap) + " or earlier." if result.undercut_threat_lap else "✅ No immediate undercut threat from behind."}</li>
         <li>{"✅ <strong>Overcut viable</strong> — low tyre degradation means staying out longer is a realistic option if track position is more valuable than fresh rubber." if result.overcut_possible else "❌ Overcut not recommended — degradation is too high to benefit from staying out longer."}</li>
-        </ul></div>""", unsafe_allow_html=True)
+        </ul></div></div>""", unsafe_allow_html=True)
 
     else:
         with st.spinner("Calculating all drivers..."):
@@ -135,7 +139,7 @@ if st.sidebar.button("Calculate Pit Window", type="primary"):
         if df.empty:
             st.warning("No data."); st.stop()
 
-        st.markdown("""<div class="explain-box">
+        st.markdown("""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
         <strong>What this shows:</strong> Each row is one driver. The coloured bar = their viable pit window.
         The gold marker = recommended optimal lap. Red ✕ = undercut threat from behind.
         Drivers whose windows overlap each other are the most likely to be involved in

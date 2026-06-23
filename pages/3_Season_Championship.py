@@ -1,28 +1,32 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import streamlit as st
+st.set_page_config(page_title="Championship", page_icon="🏆", layout="wide")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+inject_f1_css()
+
+EXPLAIN = """<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;
+padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;
+font-family:'Inter',sans-serif;">{text}</div>"""
+
+INSIGHT = """<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;
+padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;">
+<div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;
+text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div>
+{text}</div>"""
+
 import pandas as pd
 
 from f1_analysis.core.season import build_driver_standings_progression, build_team_standings_progression
 from f1_analysis.visualization.style import apply_f1_style
 from f1_analysis.visualization.plots import plot_championship_progression
 
-st.set_page_config(page_title="Championship", page_icon="🏆", layout="wide")
-st.markdown("""<style>
-.page-header{background:linear-gradient(90deg,#1a0000,#0a0a1e);border-left:4px solid #e10600;
-  padding:1.2rem 1.5rem;border-radius:0 8px 8px 0;margin-bottom:1.5rem;}
-.page-header h1{color:#fff;margin:0;font-size:1.8rem;}
-.page-header p{color:#aaa;margin:.3rem 0 0;font-size:.95rem;}
-.explain-box{background:#111827;border:1px solid #1f2937;border-left:3px solid #e10600;
-  border-radius:6px;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#d1d5db;font-size:.9rem;line-height:1.6;}
-.insight-box{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:1rem 1.3rem;margin-top:1rem;}
-.insight-box h4{color:#e10600;margin:0 0 .6rem;font-size:1rem;}
-</style>
-<div class="page-header">
-    <h1>🏆 Season Championship</h1>
-    <p>Round-by-round points progression for drivers and constructors — watch the title fight evolve.</p>
-</div>""", unsafe_allow_html=True)
 
 st.sidebar.header("Settings")
 year  = st.sidebar.number_input("Year", 2018, 2026, 2024)
@@ -61,7 +65,7 @@ if st.sidebar.button("Build Standings", type="primary"):
     # ════════════════════════════════════════════════════════════
     st.markdown("---")
     st.subheader("🧑‍🏎️ Drivers' Championship Progression")
-    st.markdown("""<div class="explain-box">
+    st.markdown("""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
     <strong>What this chart shows:</strong> Each line represents one driver's
     <strong>cumulative points total</strong> after each race weekend.
     A <strong>steep upward jump</strong> = a race win or podium (25, 18, 15 points).
@@ -90,21 +94,21 @@ if st.sidebar.button("Build Standings", type="primary"):
     best_round_row = driver_standings.loc[driver_standings["PointsDiff"].idxmax()]
     best_driver_col = "DriverCode" if "DriverCode" in best_round_row.index else "Driver"
 
-    st.markdown(f"""<div class="insight-box"><h4>🔍 Season story</h4><ul>
+    st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 Season story</h4><ul>
     {''.join(insight_lines)}
     <li>Biggest single-round points haul: <strong>{best_round_row[best_driver_col]}</strong>
     scored <strong>{int(best_round_row['PointsDiff'])} points</strong> in Round {int(best_round_row['Round'])}
     — likely a dominant win with fastest lap bonus.</li>
     <li>Points are awarded: 25-18-15-12-10-8-6-4-2-1 for P1 through P10.
     An extra point is awarded for the fastest lap if the driver finishes in the top 10.</li>
-    </ul></div>""", unsafe_allow_html=True)
+    </ul></div></div>""", unsafe_allow_html=True)
 
     # ════════════════════════════════════════════════════════════
     # CONSTRUCTORS' CHAMPIONSHIP
     # ════════════════════════════════════════════════════════════
     st.markdown("---")
     st.subheader("🏭 Constructors' Championship Progression")
-    st.markdown("""<div class="explain-box">
+    st.markdown("""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
     <strong>What this chart shows:</strong> Same as above but for <strong>teams</strong>
     (constructors). Each team's points are the combined total of both their drivers.
     This is why a team with two strong drivers (like Red Bull in 2023) can dominate

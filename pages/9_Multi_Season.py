@@ -1,7 +1,26 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import streamlit as st
+st.set_page_config(page_title="Multi-Season", page_icon="📈", layout="wide")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+inject_f1_css()
+
+EXPLAIN = """<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;
+padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;
+font-family:'Inter',sans-serif;">{text}</div>"""
+
+INSIGHT = """<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;
+padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;">
+<div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;
+text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div>
+{text}</div>"""
+
 import numpy as np
 import pandas as pd
 
@@ -12,21 +31,6 @@ from f1_analysis.core.multi_season import (
 )
 from f1_analysis.visualization.style import apply_f1_style
 
-st.set_page_config(page_title="Multi-Season", page_icon="📈", layout="wide")
-st.markdown("""<style>
-.page-header{background:linear-gradient(90deg,#1a0000,#0a0a1e);border-left:4px solid #e10600;
-  padding:1.2rem 1.5rem;border-radius:0 8px 8px 0;margin-bottom:1.5rem;}
-.page-header h1{color:#fff;margin:0;font-size:1.8rem;}
-.page-header p{color:#aaa;margin:.3rem 0 0;font-size:.95rem;}
-.explain-box{background:#111827;border:1px solid #1f2937;border-left:3px solid #e10600;
-  border-radius:6px;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#d1d5db;font-size:.9rem;line-height:1.6;}
-.insight-box{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:1rem 1.3rem;margin-top:1rem;}
-.insight-box h4{color:#e10600;margin:0 0 .6rem;font-size:1rem;}
-</style>
-<div class="page-header">
-    <h1>📈 Multi-Season Analysis</h1>
-    <p>Compare a driver across years, two rivals head-to-head over a rivalry's history, or a driver's form across a full season calendar.</p>
-</div>""", unsafe_allow_html=True)
 
 st.sidebar.header("Mode")
 mode         = st.sidebar.selectbox("Analysis type", ["Single Driver Across Seasons", "Head-to-Head Rivalry", "Circuit Heatmap"])
@@ -62,7 +66,7 @@ if st.sidebar.button("Run Analysis", type="primary"):
         if df.empty:
             st.error("No data found. Check driver code and Grand Prix name."); st.stop()
 
-        st.markdown(f"""<div class="explain-box">
+        st.markdown(f"""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
         <strong>What this shows:</strong> {driver}'s best lap time and average pace at {gp}
         in each of the selected seasons. Year-on-year improvement could reflect a better car,
         better driver understanding of the circuit, or both.
@@ -119,7 +123,7 @@ if st.sidebar.button("Run Analysis", type="primary"):
         best_year = df.loc[df["BestLapSeconds"].idxmin()]
         worst_year = df.loc[df["BestLapSeconds"].idxmax()]
         improvement = worst_year["BestLapSeconds"] - best_year["BestLapSeconds"]
-        st.markdown(f"""<div class="insight-box"><h4>🔍 Season-over-season story</h4>
+        st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 Season-over-season story</h4>
         <ul>
         <li><strong>Best performance:</strong> {int(best_year['Year'])} — {best_year['BestLapSeconds']:.3f}s
         {"(with " + str(best_year['Team']) + ")" if best_year.get('Team') else ""}</li>
@@ -127,7 +131,7 @@ if st.sidebar.button("Run Analysis", type="primary"):
         <li><strong>Overall improvement:</strong> {improvement:.3f}s faster in best year vs worst —
         {"a significant gain suggesting major car or driver development." if improvement > 0.5 else
         "a relatively stable performance level across seasons."}</li>
-        </ul></div>""", unsafe_allow_html=True)
+        </ul></div></div>""", unsafe_allow_html=True)
 
     elif mode == "Head-to-Head Rivalry":
         years = [int(y) for y in years_input.split()]
@@ -139,7 +143,7 @@ if st.sidebar.button("Run Analysis", type="primary"):
         a_wins = int((df["Faster"] == driver_a).sum())
         b_wins = int((df["Faster"] == driver_b).sum())
 
-        st.markdown(f"""<div class="explain-box">
+        st.markdown(f"""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
         <strong>Head-to-head at {gp}:</strong>
         <strong>{driver_a}</strong> leads {a_wins}–{b_wins} across the selected seasons.
         The bar chart shows the qualifying/race gap — green bars mean {driver_a} was faster that year,
@@ -182,7 +186,7 @@ if st.sidebar.button("Run Analysis", type="primary"):
         fig.tight_layout(); st.pyplot(fig); plt.close(fig)
 
         avg_gap = df["Gap_AminusB"].mean()
-        st.markdown(f"""<div class="insight-box"><h4>🔍 Rivalry verdict at {gp}</h4>
+        st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 Rivalry verdict at {gp}</h4>
         <ul>
         <li><strong>{driver_a}</strong> wins this head-to-head <strong>{a_wins}–{b_wins}</strong>
         across {a_wins+b_wins} seasons.</li>
@@ -190,7 +194,7 @@ if st.sidebar.button("Run Analysis", type="primary"):
         <strong>{"driver_a" if avg_gap < 0 else driver_b}</strong></li>
         <li>{"The gap is very consistent, suggesting a structural car/driver advantage at this circuit." if df["GapAbs"].std() < 0.15
         else "The advantage switches between seasons, suggesting both drivers can win here depending on conditions and car setup."}</li>
-        </ul></div>""", unsafe_allow_html=True)
+        </ul></div></div>""", unsafe_allow_html=True)
 
     else:
         n_rounds = int(max_rounds) if max_rounds > 0 else None
@@ -199,7 +203,7 @@ if st.sidebar.button("Run Analysis", type="primary"):
         if df.empty:
             st.error("No data found."); st.stop()
 
-        st.markdown(f"""<div class="explain-box">
+        st.markdown(f"""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
         <strong>What this shows:</strong> {driver}'s gap to the session fastest at every circuit
         in the {year} season. <strong style="color:#27ae60">Green = pole/fastest</strong>
         (gap of 0). <strong style="color:#f39c12">Orange = within 0.3s</strong> (strong performance).
@@ -233,7 +237,7 @@ if st.sidebar.button("Run Analysis", type="primary"):
         avg_gap        = df["GapToSessionBest"].mean()
         pole_circuits  = df[df["GapToSessionBest"] <= 0.001]
 
-        st.markdown(f"""<div class="insight-box"><h4>🔍 {driver}'s {year} circuit strengths</h4>
+        st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 {driver}'s {year} circuit strengths</h4>
         <ul>
         {"<li>🏆 <strong>Pole/fastest at:</strong> " + ", ".join(pole_circuits["Circuit"].str.replace(" Grand Prix","").tolist()) + "</li>" if not pole_circuits.empty else ""}
         <li><strong>Best circuit:</strong> {best_circuit['Circuit'].replace(' Grand Prix','')}
@@ -242,4 +246,4 @@ if st.sidebar.button("Run Analysis", type="primary"):
         — <strong>{worst_circuit['GapToSessionBest']:.3f}s</strong> off fastest</li>
         <li><strong>Season average gap:</strong> {avg_gap:.3f}s — 
         {"very competitive across the calendar." if avg_gap < 0.2 else "some circuits clearly suit the car better than others."}</li>
-        </ul></div>""", unsafe_allow_html=True)
+        </ul></div></div>""", unsafe_allow_html=True)

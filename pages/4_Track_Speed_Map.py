@@ -1,28 +1,31 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import streamlit as st
+st.set_page_config(page_title="Speed Map", page_icon="🗺️", layout="wide")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+from f1_analysis.visualization.ui_theme import inject_f1_css, page_header, section_label, metrics_row
+inject_f1_css()
+
+EXPLAIN = """<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;
+padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;
+font-family:'Inter',sans-serif;">{text}</div>"""
+
+INSIGHT = """<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;
+padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;">
+<div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;
+text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div>
+{text}</div>"""
 
 from f1_analysis.core.session_loader import load_session
 from f1_analysis.core.telemetry import get_driver_telemetry
 from f1_analysis.visualization.style import apply_f1_style
 from f1_analysis.visualization.plots import plot_track_speed_map
 
-st.set_page_config(page_title="Speed Map", page_icon="🗺️", layout="wide")
-st.markdown("""<style>
-.page-header{background:linear-gradient(90deg,#1a0000,#0a0a1e);border-left:4px solid #e10600;
-  padding:1.2rem 1.5rem;border-radius:0 8px 8px 0;margin-bottom:1.5rem;}
-.page-header h1{color:#fff;margin:0;font-size:1.8rem;}
-.page-header p{color:#aaa;margin:.3rem 0 0;font-size:.95rem;}
-.explain-box{background:#111827;border:1px solid #1f2937;border-left:3px solid #e10600;
-  border-radius:6px;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#d1d5db;font-size:.9rem;line-height:1.6;}
-.insight-box{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:1rem 1.3rem;margin-top:1rem;}
-.insight-box h4{color:#e10600;margin:0 0 .6rem;font-size:1rem;}
-</style>
-<div class="page-header">
-    <h1>🗺️ Track Speed Map</h1>
-    <p>The circuit outline painted by speed — see instantly where the car is fastest and where it brakes hardest.</p>
-</div>""", unsafe_allow_html=True)
 
 st.sidebar.header("Settings")
 year         = st.sidebar.number_input("Year", 2018, 2026, 2024)
@@ -43,7 +46,7 @@ if st.sidebar.button("Generate Map", type="primary"):
             st.stop()
 
     # ── Explain the chart ─────────────────────────────────────────
-    st.markdown("""<div class="explain-box">
+    st.markdown("""<div style="background:#141414;border:1px solid #2A2A2A;border-left:3px solid #E8002D;padding:.9rem 1.2rem;margin:.8rem 0 1.2rem;color:#aaa;font-size:.88rem;line-height:1.65;font-family:'Inter',sans-serif;">
     <strong>What this chart shows:</strong> The circuit is drawn as a line that follows the
     actual GPS coordinates of the car. The colour of the line changes based on how fast the
     car was going at that exact point — using a <strong>plasma colour scale</strong>:
@@ -65,7 +68,7 @@ if st.sidebar.button("Generate Map", type="primary"):
     min_dist    = telemetry.loc[telemetry["Speed"].idxmin(), "Distance"]
     full_throttle_pct = (telemetry["Throttle"] >= 99).mean() * 100 if "Throttle" in telemetry.columns else None
 
-    st.markdown(f"""<div class="insight-box"><h4>🔍 Speed analysis — {driver} at {session.event['EventName']} {year}</h4>
+    st.markdown(f"""<div style="background:#0D0D0D;border:1px solid #2A2A2A;border-top:2px solid #E8002D;padding:1rem 1.3rem;margin-top:1rem;font-family:'Inter',sans-serif;"><div style="font-family:'Titillium Web',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:#E8002D;margin-bottom:.6rem;">Key Insights</div><div style="color:#ccc;font-size:.88rem;font-family:'Inter',sans-serif;"><h4 style="color:#fff;margin:.3rem 0;">🔍 Speed analysis — {driver} at {session.event['EventName']} {year}</h4>
     <ul>
     <li><strong>Top speed:</strong> {max_speed:.0f} km/h at {max_dist:.0f}m around the lap</li>
     <li><strong>Minimum speed:</strong> {min_speed:.0f} km/h at {min_dist:.0f}m (slowest corner)</li>
@@ -75,7 +78,7 @@ if st.sidebar.button("Generate Map", type="primary"):
     <strong>{max_speed-min_speed:.0f} km/h</strong> tells you how demanding the circuit is —
     higher delta = more stop-and-go nature (like Monaco or Hungary).
     Low delta = high-speed flowing circuits (like Spa or Silverstone).</li>
-    </ul></div>""", unsafe_allow_html=True)
+    </ul></div></div>""", unsafe_allow_html=True)
 
     # ── Circuit type explainer ─────────────────────────────────────
     speed_delta = max_speed - min_speed
