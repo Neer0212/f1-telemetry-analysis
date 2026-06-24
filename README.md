@@ -97,7 +97,7 @@ f1-telemetry-analysis/
 - **Seasons:** 2018 — present
 - **Session types:** Race, Qualifying, Sprint, FP1/FP2/FP3
 - **Data per race:** ~100,000+ telemetry data points
-- **Drivers:** Full 20-driver 2026 grid reference included
+- **Drivers:** Full 22-driver 2026 grid reference included
 
 ---
 
