@@ -13,10 +13,10 @@ st.set_page_config(
 from f1_analysis.visualization.ui_theme import inject_f1_css
 inject_f1_css()
 
-# ── OpenF1 base URL ────────────────────────────────────────────────────────────
+# -- OpenF1 base URL --
 BASE = "https://api.openf1.org/v1"
 
-# ── Compound colours ───────────────────────────────────────────────────────────
+# -- Compound colours --
 COMPOUND_COLOR = {
     "SOFT":"#DA291C","MEDIUM":"#FFD700","HARD":"#E8E8E8",
     "INTERMEDIATE":"#43B02A","WET":"#0067AD","UNKNOWN":"#888888",
@@ -26,7 +26,7 @@ FLAG_COLOR = {
     "SC":"#FF8C00","VSC":"#FF8C00","CLEAR":"#27AE60","CHEQUERED":"#FFFFFF",
 }
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# -- Helpers --
 def openf1(endpoint: str, **params) -> list:
     try:
         r = requests.get(f"{BASE}/{endpoint}", params=params, timeout=8)
@@ -36,23 +36,23 @@ def openf1(endpoint: str, **params) -> list:
         return []
 
 def fmt_lap(s) -> str:
-    if s is None or pd.isna(s): return "—"
+    if s is None or pd.isna(s): return "-"
     try:
         s = float(s)
         m = int(s // 60); sec = s % 60
         return f"{m}:{sec:06.3f}"
     except Exception:
-        return "—"
+        return "-"
 
 def fmt_gap(g) -> str:
-    if g is None: return "—"
+    if g is None: return "-"
     try:
         v = float(g)
         return f"+{v:.3f}s" if v > 0 else "Leader"
     except Exception:
         return str(g)[:8]
 
-# ── Page header ────────────────────────────────────────────────────────────────
+# -- Page header --
 st.markdown("""
 <div style="background:#141414;border-bottom:3px solid #E8002D;padding:1.4rem 2.5rem 1.2rem;">
   <p style="font-family:'Titillium Web',sans-serif;font-size:0.65rem;font-weight:700;
@@ -69,7 +69,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Sidebar controls ───────────────────────────────────────────────────────────
+# -- Sidebar controls --
 with st.sidebar:
     st.markdown("### 🔴 Live Timing Settings")
 
@@ -85,6 +85,16 @@ with st.sidebar:
         hist_year = None; hist_gp = None
 
     auto_refresh = st.toggle("Auto-refresh (5s)", value=True)
+
+    st.markdown("---")
+    st.markdown("**Override session key**")
+    manual_key = st.text_input("Session key (optional)", value="",
+        help="Enter a specific OpenF1 session key to force that session. Leave blank for auto-detect.")
+    if manual_key.strip():
+        st.session_state["manual_session_key"] = manual_key.strip()
+    elif "manual_session_key" in st.session_state and not manual_key.strip():
+        del st.session_state["manual_session_key"]
+
     st.markdown("---")
     st.markdown("""
 <div style="font-family:'Inter',sans-serif;font-size:0.72rem;color:#555;line-height:1.6;">
@@ -94,33 +104,67 @@ with st.sidebar:
   No API key required.
 </div>""", unsafe_allow_html=True)
 
-# ── Resolve session key ────────────────────────────────────────────────────────
-@st.cache_data(ttl=60)
-def get_latest_session() -> dict | None:
-    sessions = openf1("sessions", session_type="Race")
-    if not sessions: return None
-    return sessions[-1]
+# -- Resolve session key --
+@st.cache_data(ttl=30)
+def get_latest_session():
+    # Try to find the current or most recent session across all types
+    # First look at 2026 sessions sorted by date
+    sessions = openf1("sessions", year=2026)
+    if not sessions:
+        sessions = openf1("sessions")
+    if not sessions:
+        return None
+    # Sort by date_start descending and return the most recent
+    from datetime import datetime, timezone
+    def parse_date(s):
+        d = str(s.get("date_start","1970-01-01"))[:19]
+        try:
+            return datetime.fromisoformat(d)
+        except Exception:
+            return datetime.min
+    sessions_sorted = sorted(sessions, key=parse_date, reverse=True)
+    return sessions_sorted[0]
 
 @st.cache_data(ttl=300)
-def get_historical_session(year: int, gp_name: str) -> dict | None:
+def get_historical_session(year: int, gp_name: str):
     sessions = openf1("sessions", year=year)
+    # Match by name
+    matches = []
     for s in sessions:
-        if gp_name.lower() in str(s.get("circuit_short_name","")).lower() \
-        or gp_name.lower() in str(s.get("meeting_name","")).lower():
-            if s.get("session_type") == "Race":
-                return s
-    # fallback: last race session in that year
+        name_match = (
+            gp_name.lower() in str(s.get("circuit_short_name","")).lower() or
+            gp_name.lower() in str(s.get("meeting_name","")).lower() or
+            gp_name.lower() in str(s.get("location","")).lower() or
+            gp_name.lower() in str(s.get("country_name","")).lower()
+        )
+        if name_match and s.get("session_type") == "Race":
+            matches.append(s)
+    if matches:
+        return matches[-1]
+    # fallback: most recent race session in that year
     races = [s for s in sessions if s.get("session_type") == "Race"]
-    return races[-1] if races else None
+    if races:
+        from datetime import datetime
+        def parse_date(s):
+            d = str(s.get("date_start","1970-01-01"))[:19]
+            try: return datetime.fromisoformat(d)
+            except: return datetime.min
+        return sorted(races, key=parse_date)[-1]
+    return None
 
-if use_live:
+# Manual override takes priority
+if "manual_session_key" in st.session_state:
+    session = {"session_key": int(st.session_state["manual_session_key"]),
+               "meeting_name": "Manual Session", "session_type": "",
+               "circuit_short_name": "", "date_start": ""}
+elif use_live:
     session = get_latest_session()
 else:
-    with st.spinner("Finding session…"):
+    with st.spinner("Finding session..."):
         session = get_historical_session(hist_year, hist_gp)
 
 if not session:
-    st.error("Could not find a session. OpenF1 may be rate-limiting — try again in a moment.")
+    st.error("Could not find a session. OpenF1 may be rate-limiting - try again in a moment.")
     st.stop()
 
 session_key = session["session_key"]
@@ -129,7 +173,7 @@ session_type = session.get("session_type","")
 circuit      = session.get("circuit_short_name","")
 date_start   = session.get("date_start","")[:10]
 
-# ── Session info banner ────────────────────────────────────────────────────────
+# -- Session info banner --
 status_color = "#27AE60" if use_live else "#3671C6"
 status_text  = "● LIVE" if use_live else "● HISTORICAL"
 st.markdown(f"""
@@ -163,7 +207,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Fetch live data ────────────────────────────────────────────────────────────
+# -- Fetch live data --
 with st.spinner("Fetching timing data…"):
     positions    = openf1("position",      session_key=session_key)
     intervals    = openf1("intervals",     session_key=session_key)
@@ -173,7 +217,7 @@ with st.spinner("Fetching timing data…"):
     drivers      = openf1("drivers",       session_key=session_key)
     stints       = openf1("stints",        session_key=session_key)
 
-# ── Build timing tower data ────────────────────────────────────────────────────
+# -- Build timing tower data --
 driver_map = {d["driver_number"]: d for d in drivers}
 
 # Latest position per driver
@@ -232,7 +276,7 @@ for dn, pos in latest_pos.items():
     })
 tower_rows.sort(key=lambda x: x["pos"])
 
-# ── TIMING TOWER ──────────────────────────────────────────────────────────────
+# -- TIMING TOWER --
 st.markdown("""
 <div style="font-family:'Titillium Web',sans-serif;font-size:0.65rem;font-weight:700;
             text-transform:uppercase;letter-spacing:0.2em;color:#E8002D;
@@ -304,7 +348,7 @@ else:
   </div>
 </div>""", unsafe_allow_html=True)
 
-# ── RACE CONTROL MESSAGES ──────────────────────────────────────────────────────
+# -- RACE CONTROL MESSAGES --
 st.markdown("""
 <div style="font-family:'Titillium Web',sans-serif;font-size:0.65rem;font-weight:700;
             text-transform:uppercase;letter-spacing:0.2em;color:#E8002D;
@@ -347,7 +391,7 @@ else:
   </div>
 </div>""", unsafe_allow_html=True)
 
-# ── PIT STOP LOG ───────────────────────────────────────────────────────────────
+# -- PIT STOP LOG --
 st.markdown("""
 <div style="font-family:'Titillium Web',sans-serif;font-size:0.65rem;font-weight:700;
             text-transform:uppercase;letter-spacing:0.2em;color:#E8002D;
@@ -376,9 +420,9 @@ else:
         code     = drv.get("name_acronym", str(dn))
         color    = "#" + drv.get("team_colour","888888")
         dur      = pit.get("pit_duration")
-        dur_str  = f"{dur:.2f}s" if dur else "—"
+        dur_str  = f"{dur:.2f}s" if dur else "-"
         pit_in   = str(pit.get("date",""))[:19].replace("T"," ")[-8:]
-        lap      = pit.get("lap_number","—")
+        lap      = pit.get("lap_number","-")
         st.markdown(f"""
 <div style="display:grid;grid-template-columns:40px 80px 1fr 100px 100px;
             gap:0;background:#141414;border-bottom:1px solid #1A1A1A;
@@ -391,7 +435,7 @@ else:
   <div></div>
 </div>""", unsafe_allow_html=True)
 
-# ── INSIGHT BOX ───────────────────────────────────────────────────────────────
+# -- INSIGHT BOX --
 st.markdown("""
 <div style="margin:1.5rem 2.5rem 0;background:#141414;border:1px solid #2A2A2A;
             border-left:4px solid #E8002D;padding:1.1rem 1.5rem;">
@@ -403,7 +447,7 @@ st.markdown("""
     <b>POS</b> = current race position. <b>GAP</b> = total time behind the race leader.
     <b>INTERVAL</b> = gap to the car directly ahead.
     <b>S1/S2/S3</b> = the three sector times of the most recent lap.
-    The <b>coloured dot</b> shows tyre compound — 
+    The <b>coloured dot</b> shows tyre compound - 
     <b style="color:#DA291C">■ Soft</b> · 
     <b style="color:#FFD700">■ Medium</b> · 
     <b style="color:#E8E8E8">■ Hard</b> · 
@@ -413,7 +457,7 @@ st.markdown("""
   </div>
 </div>""", unsafe_allow_html=True)
 
-# ── Auto-refresh ───────────────────────────────────────────────────────────────
+# -- Auto-refresh ---------------------------------------------------------------
 col1, col2 = st.columns([3,1])
 with col2:
     if st.button("🔄 Refresh Now", use_container_width=True):
