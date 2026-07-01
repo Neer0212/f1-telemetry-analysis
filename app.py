@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="F1 Analytics Hub",
     page_icon="🏎️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 from f1_analysis.visualization.ui_theme import inject_f1_css
 inject_f1_css()
@@ -276,27 +276,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 DRIVERS = [
-    ("VER","Max Verstappen","Red Bull","#3671C6"),
-    ("PER","Sergio Perez","Red Bull","#3671C6"),
-    ("LEC","Charles Leclerc","Ferrari","#E8002D"),
-    ("SAI","Carlos Sainz","Ferrari","#E8002D"),
-    ("NOR","Lando Norris","McLaren","#FF8000"),
-    ("PIA","Oscar Piastri","McLaren","#FF8000"),
-    ("HAM","Lewis Hamilton","Mercedes","#27F4D2"),
-    ("RUS","George Russell","Mercedes","#27F4D2"),
-    ("ALO","Fernando Alonso","Aston Martin","#358C75"),
-    ("STR","Lance Stroll","Aston Martin","#358C75"),
-    ("GAS","Pierre Gasly","Alpine","#FF87BC"),
-    ("OCO","Esteban Ocon","Alpine","#FF87BC"),
-    ("ALB","Alexander Albon","Williams","#64C4FF"),
-    ("SAR","Logan Sargeant","Williams","#64C4FF"),
-    ("TSU","Yuki Tsunoda","RB","#6692FF"),
-    ("RIC","Daniel Ricciardo","RB","#6692FF"),
-    ("HUL","Nico Hulkenberg","Haas","#B6BABD"),
-    ("MAG","Kevin Magnussen","Haas","#B6BABD"),
-    ("BOT","Valtteri Bottas","Sauber","#52E252"),
-    ("ZHO","Guanyu Zhou","Sauber","#52E252"),
+    ("VER", "Max Verstappen", "Red Bull", "#4570C0"),
+    ("HAD", "Isack Hadjar", "Red Bull", "#4570C0"),
+    ("LEC", "Charles Leclerc", "Ferrari", "#D52E37"),
+    ("HAM", "Lewis Hamilton", "Ferrari", "#D52E37"),
+    ("NOR", "Lando Norris", "McLaren", "#EF8733"),
+    ("PIA", "Oscar Piastri", "McLaren", "#EF8733"),
+    ("RUS", "George Russell", "Mercedes", "#75F1D3"),
+    ("ANT", "Kimi Antonelli", "Mercedes", "#75F1D3"),
+    ("ALO", "Fernando Alonso", "Aston Martin", "#358C75"),
+    ("STR", "Lance Stroll", "Aston Martin", "#358C75"),
+    ("GAS", "Pierre Gasly", "Alpine", "#00A1E8"),
+    ("COL", "Franco Colapinto", "Alpine", "#00A1E8"),
+    ("SAI", "Carlos Sainz", "Williams", "#1868DB"),
+    ("ALB", "Alexander Albon", "Williams", "#1868DB"),
+    ("LAW", "Liam Lawson", "Racing Bulls", "#6692FF"),
+    ("LIN", "Arvid Lindblad", "Racing Bulls", "#6692FF"),
+    ("OCO", "Esteban Ocon", "Haas", "#DEE1E2"),
+    ("BEA", "Oliver Bearman", "Haas", "#DEE1E2"),
+    ("HUL", "Nico Hulkenberg", "Audi", "#F50537"),
+    ("BOR", "Gabriel Bortoleto", "Audi", "#F50537"),
+    ("PER", "Sergio Perez", "Cadillac", "#AAAAAD"),
+    ("BOT", "Valtteri Bottas", "Cadillac", "#AAAAAD"),
 ]
+
 for code, name, team, color in DRIVERS:
     st.markdown(f"""
 <div style="background:#141414;padding:0.85rem 1rem;border-left:3px solid {color};">

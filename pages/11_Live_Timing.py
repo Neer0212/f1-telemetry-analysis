@@ -69,8 +69,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# -- Sidebar controls --
-with st.sidebar:
+# -- On-page controls (moved from sidebar) --
+with st.expander("🔴 Live Timing Settings", expanded=True):
     st.markdown("### 🔴 Live Timing Settings")
 
     mode = st.radio("Mode", ["🔴 Live (current session)", "📼 Historical race"],
