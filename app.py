@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="F1 Analytics Hub",
     page_icon="🏎️",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 from f1_analysis.visualization.ui_theme import inject_f1_css
 inject_f1_css()
